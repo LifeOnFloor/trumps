@@ -1,0 +1,31 @@
+{
+  "name": "trumps-core",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/peerjs": "^0.0.30",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.6.1",
+    "jsdom": "^29.1.1",
+    "postcss": "^8.5.30",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.7.0",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "lucide-react": "^1.59.0",
+    "peerjs": "^1.5.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}
