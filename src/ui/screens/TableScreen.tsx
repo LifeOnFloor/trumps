@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { DaifugoRuleState } from '../../core/rules/daifugo/types.js';
 import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
+import { useTranslation } from '../../i18n/context.js';
+import { LanguageSelector } from '../components/LanguageSelector.js';
 import { useCardSelection } from '../hooks/use-card-selection.js';
 import { OpponentSeat } from '../components/OpponentSeat.js';
 import { GameTable } from '../components/GameTable.js';
@@ -34,6 +36,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   onPass,
   onRestart,
 }) => {
+  const { t } = useTranslation();
   const { context, ruleState } = state;
   const { players, currentTurnPlayerId, isGameOver, winnerPlayerIds } = context;
 
@@ -104,19 +107,21 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         <div className="flex items-center space-x-2">
           <span className="text-xl">🃏</span>
           <span className="font-black text-sm sm:text-base text-yellow-400 tracking-wider">
-            大富豪
+            {t.app.title}
           </span>
           {activeConfig.chipsMode && (
             <span
               data-testid="chips-mode-badge"
               className="text-[10px] px-2.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-black shadow-sm"
             >
-              💰 チップ戦
+              {t.table.chipsBadge}
             </span>
           )}
         </div>
 
         <div className="flex items-center space-x-2">
+          <LanguageSelector />
+
           {peerId && (
             <button
               type="button"
@@ -124,7 +129,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
               className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/60 font-bold transition active:scale-95 flex items-center space-x-1 shadow-sm"
             >
               <span>🔗</span>
-              <span>{copiedLink ? 'コピー済' : '招待リンク'}</span>
+              <span>{copiedLink ? t.app.copied : t.app.inviteLink}</span>
             </button>
           )}
 
@@ -135,7 +140,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
             className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-black transition active:scale-95 flex items-center space-x-1 shadow-sm"
           >
             <span>📋</span>
-            <span>ルール</span>
+            <span>{t.app.rules}</span>
           </button>
         </div>
       </div>
@@ -164,11 +169,11 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         <div className="text-xs sm:text-sm font-black text-emerald-200 mt-2 flex items-center space-x-1">
           {isMyTurn ? (
             <span className="text-yellow-400 animate-pulse bg-emerald-950/80 px-3.5 py-1 rounded-full border border-yellow-400/50 shadow-sm">
-              ★ あなたの手番です！
+              {t.table.yourTurn}
             </span>
           ) : (
             <span className="text-emerald-300/80 bg-emerald-950/60 px-3.5 py-1 rounded-full">
-              {players.find((p) => p.id === currentTurnPlayerId)?.name ?? '待機中'} のターン...
+              {players.find((p) => p.id === currentTurnPlayerId)?.name ?? '...'} {t.table.waitingTurn}
             </span>
           )}
         </div>

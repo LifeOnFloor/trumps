@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from '../../core/rules/daifugo/config.js';
+import { useTranslation } from '../../i18n/context.js';
+import { LanguageSelector } from '../components/LanguageSelector.js';
 import { GameSelector } from '../components/GameSelector.js';
 import { RulePresets } from '../components/RulePresets.js';
 import { RulesModal } from '../components/RulesModal.js';
@@ -28,6 +30,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onUpdateConfig,
   onStartGame,
 }) => {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<'select' | 'host' | 'client'>('select');
   const [selectedGameId, setSelectedGameId] = useState('daifugo');
   const [playerName, setPlayerName] = useState('プレイヤー');
@@ -109,19 +112,22 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           <div className="flex items-center space-x-2">
             <span className="text-2xl">🃏</span>
             <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 tracking-wider">
-              TRUMPS ONLINE
+              {t.app.title}
             </h1>
           </div>
 
-          <button
-            type="button"
-            data-testid="open-rules-button"
-            onClick={() => setIsRulesModalOpen(true)}
-            className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/40 text-xs font-black transition active:scale-95 shadow-sm"
-          >
-            <span>📋</span>
-            <span>ルール</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <LanguageSelector />
+            <button
+              type="button"
+              data-testid="open-rules-button"
+              onClick={() => setIsRulesModalOpen(true)}
+              className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/40 text-xs font-black transition active:scale-95 shadow-sm"
+            >
+              <span>📋</span>
+              <span>{t.app.rules}</span>
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -136,19 +142,19 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           <div className="space-y-5">
             <div>
               <label className="block text-xs font-bold text-emerald-300 mb-1.5">
-                あなたのプレイヤー名
+                {t.lobby.playerName}
               </label>
               <input
                 type="text"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
                 maxLength={12}
-                placeholder="ニックネーム"
+                placeholder={t.lobby.nicknamePlaceholder}
                 className="w-full px-4 py-3 rounded-2xl bg-emerald-950/90 border border-emerald-700 text-white font-extrabold text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-inner"
               />
             </div>
 
-            {/* Game Selector */}
+            {/* Game Selector with Catalog & Filters */}
             <GameSelector
               selectedGameId={selectedGameId}
               onSelectGame={setSelectedGameId}
@@ -165,7 +171,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 flex items-center justify-center space-x-1.5"
               >
                 <span>👑</span>
-                <span>部屋を作る (Host)</span>
+                <span>{t.lobby.createRoom}</span>
               </button>
 
               <button
@@ -174,7 +180,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 className="py-3.5 px-4 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-black text-sm shadow-md border border-emerald-600/60 transition active:scale-95 flex items-center justify-center space-x-1.5"
               >
                 <span>🚪</span>
-                <span>部屋に入る (Join)</span>
+                <span>{t.lobby.joinRoom}</span>
               </button>
             </div>
           </div>
@@ -188,9 +194,9 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-yellow-400 font-extrabold flex items-center space-x-1">
                   <span>🔗</span>
-                  <span>招待用リンク</span>
+                  <span>{t.lobby.hostTitle}</span>
                 </span>
-                <span className="text-[11px] text-emerald-400">ワンタップで合流可能</span>
+                <span className="text-[11px] text-emerald-400">{t.lobby.inviteUrlDesc}</span>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -206,7 +212,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   onClick={handleCopyInviteLink}
                   className="px-3.5 py-2 text-xs rounded-xl bg-yellow-400 hover:bg-yellow-300 text-gray-950 font-black transition active:scale-95 shadow-md flex items-center space-x-1 whitespace-nowrap disabled:opacity-50"
                 >
-                  <span>{copiedLink ? '✓ コピー完了' : 'リンクコピー'}</span>
+                  <span>{copiedLink ? t.app.copied : t.app.copyLink}</span>
                 </button>
               </div>
             </div>
@@ -216,8 +222,8 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               <div className="flex items-center space-x-2">
                 <span className="text-xl">💰</span>
                 <div>
-                  <div className="font-black text-xs text-yellow-300">カジノチップ対戦モード</div>
-                  <div className="text-[11px] text-emerald-400">順位に応じてチップをやり取り（初期: 1,000枚）</div>
+                  <div className="font-black text-xs text-yellow-300">{t.lobby.chipsMode}</div>
+                  <div className="text-[11px] text-emerald-400">{t.lobby.chipsModeDesc}</div>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -237,7 +243,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
             {/* Fine-grained Toggles */}
             <div className="p-3 rounded-2xl bg-emerald-950/50 border border-emerald-800/80 text-xs space-y-2">
-              <div className="font-extrabold text-emerald-300">詳細ルール設定</div>
+              <div className="font-extrabold text-emerald-300">{t.lobby.ruleDetails}</div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <label className="flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-900/50">
                   <input
@@ -246,7 +252,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     onChange={() => toggleConfig('eightCut')}
                     className="accent-yellow-400 w-4 h-4 rounded"
                   />
-                  <span className="font-bold">8切り</span>
+                  <span className="font-bold">{t.rules.eightCutTitle}</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-900/50">
                   <input
@@ -255,7 +261,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     onChange={() => toggleConfig('revolution')}
                     className="accent-yellow-400 w-4 h-4 rounded"
                   />
-                  <span className="font-bold">革命 (4枚出し)</span>
+                  <span className="font-bold">{t.rules.revolutionTitle}</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-900/50">
                   <input
@@ -264,7 +270,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     onChange={() => toggleConfig('spadeThreeReturn')}
                     className="accent-yellow-400 w-4 h-4 rounded"
                   />
-                  <span className="font-bold">スペ3返し</span>
+                  <span className="font-bold">{t.rules.spadeThreeTitle}</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-900/50">
                   <input
@@ -273,7 +279,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     onChange={() => toggleConfig('stairs')}
                     className="accent-yellow-400 w-4 h-4 rounded"
                   />
-                  <span className="font-bold">階段 (3枚以上)</span>
+                  <span className="font-bold">{t.rules.stairsTitle}</span>
                 </label>
               </div>
             </div>
@@ -281,8 +287,8 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             {/* Participant List */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-extrabold text-emerald-300">
-                <span>参加プレイヤー ({players.length}/8人)</span>
-                <span className="text-[11px] text-yellow-400">3人以上で開始可能</span>
+                <span>{t.lobby.playersCount} ({players.length}/8)</span>
+                <span className="text-[11px] text-yellow-400">{t.lobby.minPlayersToStart}</span>
               </div>
               <div className="max-h-24 overflow-y-auto space-y-1.5 scrollbar-thin">
                 {players.map((p, idx) => (
@@ -296,7 +302,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     </span>
                     {idx === 0 && (
                       <span className="text-[10px] text-gray-950 bg-yellow-400 px-2 py-0.5 rounded-full font-black">
-                        HOST
+                        {t.lobby.hostBadge}
                       </span>
                     )}
                   </div>
@@ -315,7 +321,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   : 'bg-emerald-950/80 text-gray-400 border border-emerald-800 cursor-not-allowed opacity-60'
               }`}
             >
-              {players.length >= 3 ? `ゲームを開始する (${players.length}人)` : `プレイヤーを待っています (${players.length}/3人〜)`}
+              {players.length >= 3 ? `${t.lobby.startGame} (${players.length})` : `${t.lobby.waitingPlayers} (${players.length}/3...)`}
             </button>
           </div>
         )}
@@ -324,7 +330,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
         {mode === 'client' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-emerald-300 mb-1">あなたの名前</label>
+              <label className="block text-xs font-bold text-emerald-300 mb-1">{t.lobby.playerName}</label>
               <input
                 type="text"
                 value={playerName}
@@ -336,11 +342,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
             <div>
               <label className="block text-xs font-bold text-emerald-300 mb-1">
-                ルームID（または招待リンク）
+                {t.lobby.enterHostId}
               </label>
               <input
                 type="text"
-                placeholder="招待されたPeerID、またはURL"
+                placeholder={t.lobby.idPlaceholder}
                 value={targetPeerId}
                 onChange={(e) => {
                   const val = e.target.value.trim();
@@ -360,11 +366,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             {/* Room Rules Summary for Client */}
             <div className="p-3 rounded-2xl bg-emerald-950/70 border border-emerald-800 text-xs space-y-1">
               <div className="flex items-center justify-between text-yellow-300 font-bold">
-                <span>ホスト設定ルール</span>
-                <span>{config.chipsMode ? '💰 チップ戦: ON' : 'チップ戦: OFF'}</span>
+                <span>{t.lobby.roomRules}</span>
+                <span>{config.chipsMode ? '💰 ON' : 'OFF'}</span>
               </div>
               <div className="text-[11px] text-emerald-300/80">
-                8切り: {config.eightCut ? 'ON' : 'OFF'} • 革命: {config.revolution ? 'ON' : 'OFF'} • スペ3: {config.spadeThreeReturn ? 'ON' : 'OFF'}
+                {t.rules.eightCutTitle}: {config.eightCut ? 'ON' : 'OFF'} • {t.rules.revolutionTitle}: {config.revolution ? 'ON' : 'OFF'} • {t.rules.spadeThreeTitle}: {config.spadeThreeReturn ? 'ON' : 'OFF'}
               </div>
             </div>
 
@@ -372,7 +378,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             {players.length > 0 && (
               <div className="space-y-1">
                 <div className="text-xs font-bold text-emerald-300">
-                  参加中のプレイヤー ({players.length}人)
+                  {t.lobby.joinedPlayers} ({players.length})
                 </div>
                 <div className="max-h-20 overflow-y-auto space-y-1 scrollbar-thin">
                   {players.map((p) => (
@@ -393,7 +399,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               onClick={() => onJoinClient(targetPeerId.trim(), playerName)}
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              部屋に参加する
+              {t.lobby.enterRoom}
             </button>
 
             <button
@@ -401,7 +407,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               onClick={() => setMode('select')}
               className="w-full py-2 text-xs text-emerald-400 hover:text-emerald-300 hover:underline font-bold"
             >
-              ← モード選択に戻る
+              {t.lobby.backToModeSelect}
             </button>
           </div>
         )}

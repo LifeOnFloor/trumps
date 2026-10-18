@@ -1,5 +1,6 @@
 import React from 'react';
 import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
+import { useTranslation } from '../../i18n/context.js';
 
 export interface RulesModalProps {
   isOpen: boolean;
@@ -12,46 +13,47 @@ export const RulesModal: React.FC<RulesModalProps> = ({
   config,
   onClose,
 }) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   const ruleItems = [
     {
-      name: '8切り',
+      name: t.rules.eightCutTitle,
       enabled: config.eightCut,
-      desc: '8を含むカードを出すと場が即座に流れ、出し手のターンが継続します。',
+      desc: t.rules.eightCutDesc,
     },
     {
-      name: '革命',
+      name: t.rules.revolutionTitle,
       enabled: config.revolution,
-      desc: '同じ数字の4枚出しでカードの強さが逆転します（3が最強、2が最弱）。',
+      desc: t.rules.revolutionDesc,
     },
     {
-      name: 'スペ3返し',
+      name: t.rules.spadeThreeTitle,
       enabled: config.spadeThreeReturn,
-      desc: 'ジョーカー単騎に対して♠3を出すと場を流せます。',
+      desc: t.rules.spadeThreeDesc,
     },
     {
-      name: '階段',
+      name: t.rules.stairsTitle,
       enabled: config.stairs,
-      desc: '同じスートで数字が3枚以上連続するカードを一度に出せます。',
+      desc: t.rules.stairsDesc,
     },
     {
-      name: '縛り',
+      name: t.rules.suitLockTitle,
       enabled: config.suitLock !== 'none',
-      desc: '直前と同じスートが出た場合、以降はそのスートしか出せなくなります。',
+      desc: t.rules.suitLockDesc,
     },
     {
-      name: '禁止上がり',
+      name: t.rules.prohibitedEndingsTitle,
       enabled:
         config.prohibitedEndings.joker ||
         config.prohibitedEndings.eight ||
         config.prohibitedEndings.two,
-      desc: 'ジョーカー・8・2（革命時3）を最後に出して上がると反則負け（最下位）になります。',
+      desc: t.rules.prohibitedEndingsDesc,
     },
     {
-      name: 'カジノチップ対戦',
+      name: t.rules.chipsTitle,
       enabled: !!config.chipsMode,
-      desc: `チップ（初期: ${config.initialChips ?? 1000}枚）を使用し、順位に応じたチップのやり取りを行います。`,
+      desc: `${t.rules.chipsDesc} (${config.initialChips ?? 1000})`,
     },
   ];
 
@@ -72,7 +74,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
           <div className="flex items-center space-x-2">
             <span className="text-xl">📋</span>
             <h2 id="rules-title" className="text-lg font-black text-yellow-400 tracking-wider">
-              現在のルール設定
+              {t.rules.title}
             </h2>
           </div>
           <button
@@ -80,7 +82,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
             data-testid="close-rules-button"
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-900/80 hover:bg-emerald-800 text-gray-300 hover:text-white font-bold transition"
-            aria-label="閉じる"
+            aria-label={t.rules.close}
           >
             ✕
           </button>
@@ -119,7 +121,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
             onClick={onClose}
             className="w-full py-2.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-gray-950 font-black text-sm shadow-md transition active:scale-95"
           >
-            閉じる
+            {t.rules.close}
           </button>
         </div>
       </div>

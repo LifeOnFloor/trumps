@@ -1,9 +1,10 @@
 import React from 'react';
+import { I18nProvider } from '../i18n/context.js';
 import { useGameSession } from './hooks/use-game-session.js';
 import { LobbyScreen } from './screens/LobbyScreen.js';
 import { TableScreen } from './screens/TableScreen.js';
 
-export const App: React.FC = () => {
+const MainAppContent: React.FC = () => {
   const {
     isHost,
     peerId,
@@ -50,5 +51,13 @@ export const App: React.FC = () => {
       onPass={dispatchPass}
       onRestart={() => window.location.reload()}
     />
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <I18nProvider>
+      <MainAppContent />
+    </I18nProvider>
   );
 };
