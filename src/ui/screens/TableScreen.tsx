@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { DaifugoRuleState } from '../../core/rules/daifugo/types.js';
+import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
 import { useCardSelection } from '../hooks/use-card-selection.js';
 import { OpponentSeat } from '../components/OpponentSeat.js';
 import { GameTable } from '../components/GameTable.js';
@@ -14,6 +15,8 @@ export interface TableScreenProps {
   state: SanitizedState<DaifugoRuleState>;
   myPlayerId: string;
   peerId?: string;
+  disconnectedPlayerIds?: readonly string[];
+  roomConfig?: DaifugoConfig;
   recentEvents: readonly GameEvent[];
   onPlay: (cardIds: string[]) => void;
   onPass: () => void;
@@ -24,6 +27,8 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   state,
   myPlayerId,
   peerId,
+  disconnectedPlayerIds = [],
+  roomConfig,
   recentEvents,
   onPlay,
   onPass,
@@ -34,6 +39,9 @@ export const TableScreen: React.FC<TableScreenProps> = ({
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Active configuration (prefer roomConfig or ruleState.config)
+  const activeConfig = roomConfig ?? ruleState.config;
 
   const myPlayer = players.find((p) => p.id === myPlayerId);
   const myHand = myPlayer?.hand ?? [];
@@ -51,7 +59,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
     hand: myHand,
     table: ruleState.table,
     isRevolution: ruleState.isRevolution,
-    config: ruleState.config,
+    config: activeConfig,
     isMyTurn,
   });
 
@@ -87,7 +95,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
       {/* Rules Modal */}
       <RulesModal
         isOpen={isRulesModalOpen}
-        config={ruleState.config}
+        config={activeConfig}
         onClose={() => setIsRulesModalOpen(false)}
       />
 
@@ -98,8 +106,11 @@ export const TableScreen: React.FC<TableScreenProps> = ({
           <span className="font-black text-sm sm:text-base text-yellow-400 tracking-wider">
             大富豪
           </span>
-          {ruleState.config.chipsMode && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold">
+          {activeConfig.chipsMode && (
+            <span
+              data-testid="chips-mode-badge"
+              className="text-[10px] px-2.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-black shadow-sm"
+            >
               💰 チップ戦
             </span>
           )}
@@ -110,7 +121,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
             <button
               type="button"
               onClick={handleCopyInviteLink}
-              className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/60 font-bold transition active:scale-95 flex items-center space-x-1"
+              className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/60 font-bold transition active:scale-95 flex items-center space-x-1 shadow-sm"
             >
               <span>🔗</span>
               <span>{copiedLink ? 'コピー済' : '招待リンク'}</span>
@@ -121,7 +132,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
             type="button"
             data-testid="table-rules-button"
             onClick={() => setIsRulesModalOpen(true)}
-            className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-black transition active:scale-95 flex items-center space-x-1"
+            className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-black transition active:scale-95 flex items-center space-x-1 shadow-sm"
           >
             <span>📋</span>
             <span>ルール</span>
@@ -136,6 +147,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
             key={opponent.id}
             player={opponent}
             isCurrentTurn={currentTurnPlayerId === opponent.id}
+            isDisconnected={disconnectedPlayerIds.includes(opponent.id)}
           />
         ))}
       </div>
@@ -151,11 +163,11 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         {/* Turn prompt indicator */}
         <div className="text-xs sm:text-sm font-black text-emerald-200 mt-2 flex items-center space-x-1">
           {isMyTurn ? (
-            <span className="text-yellow-400 animate-pulse bg-emerald-950/80 px-3 py-1 rounded-full border border-yellow-400/50 shadow-sm">
+            <span className="text-yellow-400 animate-pulse bg-emerald-950/80 px-3.5 py-1 rounded-full border border-yellow-400/50 shadow-sm">
               ★ あなたの手番です！
             </span>
           ) : (
-            <span className="text-emerald-300/80 bg-emerald-950/60 px-3 py-1 rounded-full">
+            <span className="text-emerald-300/80 bg-emerald-950/60 px-3.5 py-1 rounded-full">
               {players.find((p) => p.id === currentTurnPlayerId)?.name ?? '待機中'} のターン...
             </span>
           )}

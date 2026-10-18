@@ -2,6 +2,7 @@ import type { CardGamePlugin, GameEvent, SanitizedState } from '../core/types/en
 import { GameRunner } from '../core/engine/game-runner.js';
 import { DaifugoPlugin } from '../core/rules/daifugo/index.js';
 import type { DaifugoConfig } from '../core/rules/daifugo/config.js';
+import { DEFAULT_DAIFUGO_CONFIG } from '../core/rules/daifugo/config.js';
 import type { DaifugoAction, DaifugoRuleState } from '../core/rules/daifugo/types.js';
 import type { ITransport } from './transport.js';
 import type { ClientMessage, HostMessage, NetworkPlayer } from './types.js';
@@ -14,12 +15,13 @@ export interface HostSessionOptions {
 export class HostSession {
   private readonly transport: ITransport;
   private readonly hostPlayer: { id: string; name: string };
-  private readonly options: HostSessionOptions;
   private readonly plugin: CardGamePlugin<DaifugoConfig, DaifugoRuleState, DaifugoAction>;
 
+  private currentConfig: DaifugoConfig;
   private players: NetworkPlayer[] = [];
   private gameRunner: GameRunner<DaifugoConfig, DaifugoRuleState, DaifugoAction> | null = null;
   private stateChangeListeners: ((state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]) => void)[] = [];
+  private playersChangeListeners: ((players: readonly NetworkPlayer[]) => void)[] = [];
 
   constructor(
     transport: ITransport,
@@ -28,8 +30,15 @@ export class HostSession {
   ) {
     this.transport = transport;
     this.hostPlayer = hostPlayer;
-    this.options = options;
     this.plugin = options.plugin ?? new DaifugoPlugin();
+    this.currentConfig = {
+      ...DEFAULT_DAIFUGO_CONFIG,
+      ...(options.config ?? {}),
+      prohibitedEndings: {
+        ...DEFAULT_DAIFUGO_CONFIG.prohibitedEndings,
+        ...(options.config?.prohibitedEndings ?? {}),
+      },
+    };
 
     // Register host as first player
     this.players.push({
@@ -39,6 +48,31 @@ export class HostSession {
     });
 
     this.setupTransportHandlers();
+  }
+
+  getConfig(): DaifugoConfig {
+    return this.currentConfig;
+  }
+
+  updateConfig(configPartial: Partial<DaifugoConfig>): void {
+    this.currentConfig = {
+      ...this.currentConfig,
+      ...configPartial,
+      prohibitedEndings: {
+        ...this.currentConfig.prohibitedEndings,
+        ...(configPartial.prohibitedEndings ?? {}),
+      },
+    };
+
+    // Broadcast updated config to all connected clients
+    for (const p of this.players) {
+      if (p.peerId !== this.transport.peerId) {
+        this.transport.send(p.peerId, {
+          type: 'CONFIG_UPDATED',
+          config: this.currentConfig,
+        } as HostMessage);
+      }
+    }
   }
 
   getPlayers(): readonly NetworkPlayer[] {
@@ -63,7 +97,14 @@ export class HostSession {
     };
   }
 
-  startGame(): void {
+  onPlayersChange(listener: (players: readonly NetworkPlayer[]) => void): () => void {
+    this.playersChangeListeners.push(listener);
+    return () => {
+      this.playersChangeListeners = this.playersChangeListeners.filter((l) => l !== listener);
+    };
+  }
+
+  startGame(latestConfig?: Partial<DaifugoConfig>): void {
     if (this.gameRunner) {
       throw new Error('Game already started');
     }
@@ -71,8 +112,12 @@ export class HostSession {
       throw new Error(`Player count must be between ${this.plugin.minPlayers} and ${this.plugin.maxPlayers}`);
     }
 
+    if (latestConfig) {
+      this.updateConfig(latestConfig);
+    }
+
     const runnerPlayers = this.players.map((p) => ({ id: p.id, name: p.name }));
-    this.gameRunner = new GameRunner(this.plugin, runnerPlayers, this.options.config);
+    this.gameRunner = new GameRunner(this.plugin, runnerPlayers, this.currentConfig);
 
     // Send GAME_STARTED with sanitized state to each client
     for (const player of this.players) {
@@ -140,17 +185,35 @@ export class HostSession {
       this.players.push({ id: playerId, name: playerName, peerId });
     }
 
+    this.notifyPlayersChange();
+
     const publicPlayers = this.players.map((p) => ({ id: p.id, name: p.name }));
 
     // Notify all participants
     for (const p of this.players) {
       if (p.peerId !== this.transport.peerId) {
+        // Send full player list and current config
         const joinMsg: HostMessage = {
           type: 'ROOM_JOINED',
           assignedPlayerId: p.id,
           players: publicPlayers,
         };
         this.transport.send(p.peerId, joinMsg);
+
+        // Also notify about the new player specifically
+        if (p.id !== playerId) {
+          const newPlayerMsg: HostMessage = {
+            type: 'PLAYER_JOINED',
+            player: { id: playerId, name: playerName },
+          };
+          this.transport.send(p.peerId, newPlayerMsg);
+        }
+
+        // Send current room config
+        this.transport.send(p.peerId, {
+          type: 'CONFIG_UPDATED',
+          config: this.currentConfig,
+        } as HostMessage);
       }
     }
   }
@@ -191,6 +254,8 @@ export class HostSession {
     const [disconnected] = this.players.splice(playerIndex, 1);
     if (!disconnected) return;
 
+    this.notifyPlayersChange();
+
     const msg: HostMessage = {
       type: 'PLAYER_DISCONNECTED',
       playerId: disconnected.id,
@@ -200,6 +265,38 @@ export class HostSession {
     for (const p of this.players) {
       if (p.peerId !== this.transport.peerId) {
         this.transport.send(p.peerId, msg);
+      }
+    }
+
+    // If game in progress and disconnected player was current turn, advance turn via pass
+    if (this.gameRunner) {
+      const currentContext = this.gameRunner.getContext();
+      if (currentContext.currentTurnPlayerId === disconnected.id && !currentContext.isGameOver) {
+        try {
+          if (this.gameRunner.canExecute(disconnected.id, { type: 'PASS' })) {
+            const events = this.gameRunner.execute(disconnected.id, { type: 'PASS' });
+            for (const player of this.players) {
+              const sanitized = this.gameRunner.getSanitizedStateForPlayer(player.id);
+              if (player.peerId === this.transport.peerId) {
+                this.notifyStateChange(sanitized, [
+                  ...events,
+                  { type: 'PLAYER_DISCONNECTED', payload: { playerId: disconnected.id } },
+                ]);
+              } else {
+                this.transport.send(player.peerId, {
+                  type: 'SYNC_STATE',
+                  state: sanitized,
+                  events: [
+                    ...events,
+                    { type: 'PLAYER_DISCONNECTED', payload: { playerId: disconnected.id } },
+                  ],
+                });
+              }
+            }
+          }
+        } catch {
+          // ignore if cannot pass
+        }
       }
     }
   }
@@ -212,6 +309,12 @@ export class HostSession {
   private notifyStateChange(state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]): void {
     for (const listener of this.stateChangeListeners) {
       listener(state, events);
+    }
+  }
+
+  private notifyPlayersChange(): void {
+    for (const listener of this.playersChangeListeners) {
+      listener([...this.players]);
     }
   }
 }

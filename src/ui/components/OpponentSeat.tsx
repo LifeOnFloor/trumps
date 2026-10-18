@@ -4,27 +4,40 @@ import type { SanitizedPlayerState } from '../../core/types/engine.js';
 export interface OpponentSeatProps {
   player: SanitizedPlayerState;
   isCurrentTurn: boolean;
+  isDisconnected?: boolean;
 }
 
 export const OpponentSeat: React.FC<OpponentSeatProps> = ({
   player,
   isCurrentTurn,
+  isDisconnected = false,
 }) => {
   return (
     <div
       data-testid={`opponent-${player.id}`}
-      className={`flex flex-col items-center px-3 py-2 rounded-2xl border transition-all duration-300 min-w-[80px] sm:min-w-[100px] shadow-sm ${
-        isCurrentTurn
+      className={`relative flex flex-col items-center px-3 py-2 rounded-2xl border transition-all duration-300 min-w-[80px] sm:min-w-[100px] shadow-sm ${
+        isDisconnected
+          ? 'bg-red-950/40 border-red-800/60 opacity-60'
+          : isCurrentTurn
           ? 'bg-gradient-to-b from-yellow-500/25 to-amber-600/30 border-yellow-400 ring-2 ring-yellow-400 shadow-yellow-500/20 shadow-lg scale-105'
           : 'bg-emerald-900/60 border-emerald-700/60 backdrop-blur-sm'
       }`}
     >
+      {isDisconnected && (
+        <span
+          data-testid={`disconnected-badge-${player.id}`}
+          className="absolute -top-2 px-1.5 py-0.5 rounded-full bg-red-600 text-white font-black text-[9px] shadow-md border border-red-400"
+        >
+          切断
+        </span>
+      )}
+
       <div className="flex items-center space-x-1.5 mb-1.5 w-full justify-center">
         <span className="font-extrabold text-xs sm:text-sm text-gray-100 max-w-[80px] sm:max-w-[110px] truncate">
           {player.name}
         </span>
         {player.isFinished && (
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-yellow-400 text-gray-950 font-black shadow-sm">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-400 text-gray-950 font-black shadow-sm">
             {player.rankPosition ? `${player.rankPosition}位` : 'Finish'}
           </span>
         )}

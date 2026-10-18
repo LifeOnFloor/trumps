@@ -149,4 +149,36 @@ describe('P2P Multi-player Session (Host-Client with MemoryTransport)', () => {
     expect(disconnectedPlayerId).toBe('c1_p');
     expect(hostSession.getPlayers().some((p) => p.id === 'c1_p')).toBe(false);
   });
+
+  it('6. ホストのルール変更同期: ホストがupdateConfigを実行すると、クライアントに最新Configが届くこと', async () => {
+    await client1Session.joinRoom('host_peer');
+
+    let clientConfig: any = null;
+    client1Session.onConfigUpdated((conf) => {
+      clientConfig = conf;
+    });
+
+    // Host updates config (e.g. chipsMode: true)
+    hostSession.updateConfig({ chipsMode: true, eightCut: false });
+
+    expect(clientConfig).not.toBeNull();
+    expect(clientConfig.chipsMode).toBe(true);
+    expect(clientConfig.eightCut).toBe(false);
+  });
+
+  it('7. 新規参加のリアルタイム通知: 他クライアントが途中入室した際、既存クライアントへ即座に通知されること', async () => {
+    await client1Session.joinRoom('host_peer');
+
+    let newJoinedPlayer: any = null;
+    client1Session.onPlayerJoined((p) => {
+      newJoinedPlayer = p;
+    });
+
+    // Client 2 joins room
+    await client2Session.joinRoom('host_peer');
+
+    expect(newJoinedPlayer).not.toBeNull();
+    expect(newJoinedPlayer.id).toBe('c2_p');
+    expect(client1Session.getPlayers()).toHaveLength(3);
+  });
 });

@@ -9,19 +9,23 @@ export interface LobbyScreenProps {
   isHost: boolean;
   peerId: string;
   players: readonly { id: string; name: string }[];
+  roomConfig?: DaifugoConfig;
   error: string | null;
   onStartHost: (playerName: string, config: DaifugoConfig) => void;
   onJoinClient: (hostPeerId: string, playerName: string) => void;
-  onStartGame: () => void;
+  onUpdateConfig?: (config: DaifugoConfig) => void;
+  onStartGame: (config?: DaifugoConfig) => void;
 }
 
 export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   isHost,
   peerId,
   players,
+  roomConfig,
   error,
   onStartHost,
   onJoinClient,
+  onUpdateConfig,
   onStartGame,
 }) => {
   const [mode, setMode] = useState<'select' | 'host' | 'client'>('select');
@@ -31,8 +35,15 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
-  // Config settings
-  const [config, setConfig] = useState<DaifugoConfig>(DEFAULT_DAIFUGO_CONFIG);
+  // Config settings initialized with roomConfig or default
+  const [config, setConfig] = useState<DaifugoConfig>(roomConfig ?? DEFAULT_DAIFUGO_CONFIG);
+
+  // Sync with incoming roomConfig for clients
+  useEffect(() => {
+    if (roomConfig) {
+      setConfig(roomConfig);
+    }
+  }, [roomConfig]);
 
   // Read URL query param for automatic join link: ?room=xxx
   useEffect(() => {
@@ -56,22 +67,31 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
     }
   };
 
+  const updateAndNotifyConfig = (newConfig: DaifugoConfig) => {
+    setConfig(newConfig);
+    if (onUpdateConfig) {
+      onUpdateConfig(newConfig);
+    }
+  };
+
   const toggleConfig = (key: keyof Omit<DaifugoConfig, 'suitLock' | 'prohibitedEndings'>) => {
-    setConfig((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    const updated: DaifugoConfig = {
+      ...config,
+      [key]: !config[key],
+    };
+    updateAndNotifyConfig(updated);
   };
 
   const handleApplyPreset = (configPartial: Partial<DaifugoConfig>) => {
-    setConfig((prev) => ({
-      ...prev,
+    const updated: DaifugoConfig = {
+      ...config,
       ...configPartial,
       prohibitedEndings: {
-        ...prev.prohibitedEndings,
+        ...config.prohibitedEndings,
         ...(configPartial.prohibitedEndings ?? {}),
       },
-    }));
+    };
+    updateAndNotifyConfig(updated);
   };
 
   return (
@@ -114,7 +134,6 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
         {/* MODE 1: SELECT */}
         {mode === 'select' && (
           <div className="space-y-5">
-            {/* Player Name Input */}
             <div>
               <label className="block text-xs font-bold text-emerald-300 mb-1.5">
                 あなたのプレイヤー名
@@ -198,12 +217,13 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 <span className="text-xl">💰</span>
                 <div>
                   <div className="font-black text-xs text-yellow-300">カジノチップ対戦モード</div>
-                  <div className="text-[11px] text-emerald-400">順位に応じてチップをやり取り</div>
+                  <div className="text-[11px] text-emerald-400">順位に応じてチップをやり取り（初期: 1,000枚）</div>
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
+                  data-testid="chips-mode-toggle"
                   checked={!!config.chipsMode}
                   onChange={() => toggleConfig('chipsMode')}
                   className="sr-only peer"
@@ -268,7 +288,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 {players.map((p, idx) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-950/90 border border-emerald-800 text-xs font-black"
+                    className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-emerald-950/90 border border-emerald-800 text-xs font-black animate-in fade-in"
                   >
                     <span className="flex items-center space-x-2">
                       <span className="text-yellow-400">#{idx + 1}</span>
@@ -288,7 +308,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             <button
               type="button"
               disabled={players.length < 3}
-              onClick={onStartGame}
+              onClick={() => onStartGame(config)}
               className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-xl transition active:scale-95 ${
                 players.length >= 3
                   ? 'bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-gray-950 ring-2 ring-yellow-300 shadow-yellow-500/30'
@@ -324,7 +344,6 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 value={targetPeerId}
                 onChange={(e) => {
                   const val = e.target.value.trim();
-                  // Extract room param if pasted full URL
                   if (val.includes('room=')) {
                     const match = val.match(/[?&]room=([^&#]+)/);
                     if (match && match[1]) {
@@ -337,6 +356,36 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 className="w-full px-4 py-3 rounded-2xl bg-emerald-950/90 border border-emerald-700 text-yellow-300 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
             </div>
+
+            {/* Room Rules Summary for Client */}
+            <div className="p-3 rounded-2xl bg-emerald-950/70 border border-emerald-800 text-xs space-y-1">
+              <div className="flex items-center justify-between text-yellow-300 font-bold">
+                <span>ホスト設定ルール</span>
+                <span>{config.chipsMode ? '💰 チップ戦: ON' : 'チップ戦: OFF'}</span>
+              </div>
+              <div className="text-[11px] text-emerald-300/80">
+                8切り: {config.eightCut ? 'ON' : 'OFF'} • 革命: {config.revolution ? 'ON' : 'OFF'} • スペ3: {config.spadeThreeReturn ? 'ON' : 'OFF'}
+              </div>
+            </div>
+
+            {/* Participant List if joined */}
+            {players.length > 0 && (
+              <div className="space-y-1">
+                <div className="text-xs font-bold text-emerald-300">
+                  参加中のプレイヤー ({players.length}人)
+                </div>
+                <div className="max-h-20 overflow-y-auto space-y-1 scrollbar-thin">
+                  {players.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-emerald-950 text-xs font-bold"
+                    >
+                      <span>{p.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button
               type="button"

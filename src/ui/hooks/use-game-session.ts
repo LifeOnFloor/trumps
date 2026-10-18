@@ -12,6 +12,8 @@ export function useGameSession() {
   const [peerId, setPeerId] = useState<string>('');
   const [myPlayerId, setMyPlayerId] = useState<string>('');
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
+  const [disconnectedPlayerIds, setDisconnectedPlayerIds] = useState<string[]>([]);
+  const [roomConfig, setRoomConfig] = useState<DaifugoConfig>(DEFAULT_DAIFUGO_CONFIG);
   const [state, setState] = useState<SanitizedState<DaifugoRuleState> | null>(null);
   const [recentEvents, setRecentEvents] = useState<readonly GameEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,7 @@ export function useGameSession() {
   const clientSessionRef = useRef<ClientSession | null>(null);
 
   const startHost = useCallback(
-    async (playerName: string, config: Partial<DaifugoConfig> = DEFAULT_DAIFUGO_CONFIG) => {
+    async (playerName: string, initialConfig: Partial<DaifugoConfig> = DEFAULT_DAIFUGO_CONFIG) => {
       try {
         setError(null);
         setIsHost(true);
@@ -30,21 +32,19 @@ export function useGameSession() {
         const hostPlayer = { id: `p_${Date.now()}`, name: playerName };
         setMyPlayerId(hostPlayer.id);
 
-        const session = new HostSession(transport, hostPlayer, { config });
+        const session = new HostSession(transport, hostPlayer, { config: initialConfig });
         hostSessionRef.current = session;
         setPlayers([...session.getPlayers()]);
+        setRoomConfig(session.getConfig());
 
         session.onStateChange((newState, events) => {
           setState(newState);
           setRecentEvents(events);
         });
 
-        // Track participant joins via polling or listener
-        setInterval(() => {
-          if (hostSessionRef.current) {
-            setPlayers([...hostSessionRef.current.getPlayers()]);
-          }
-        }, 1000);
+        session.onPlayersChange((updatedPlayers) => {
+          setPlayers([...updatedPlayers]);
+        });
       } catch (err: any) {
         setError(err.message ?? 'Failed to initialize host');
       }
@@ -69,6 +69,15 @@ export function useGameSession() {
         setPlayers([...roomPlayers]);
       });
 
+      session.onPlayerJoined((player) => {
+        setPlayers((prev) => (prev.some((p) => p.id === player.id) ? prev : [...prev, player]));
+        setRecentEvents([{ type: 'PLAYER_JOINED', payload: { player } }]);
+      });
+
+      session.onConfigUpdated((conf) => {
+        setRoomConfig(conf);
+      });
+
       session.onStateChange((newState, events) => {
         setState(newState);
         setRecentEvents(events);
@@ -78,21 +87,34 @@ export function useGameSession() {
         setError(`Action rejected: ${reason}`);
       });
 
+      session.onPlayerDisconnected((playerId) => {
+        setDisconnectedPlayerIds((prev) => [...new Set([...prev, playerId])]);
+        setRecentEvents([{ type: 'PLAYER_DISCONNECTED', payload: { playerId } }]);
+      });
+
       await session.joinRoom(hostPeerId);
     } catch (err: any) {
       setError(err.message ?? 'Failed to connect to host');
     }
   }, []);
 
-  const startGame = useCallback(() => {
+  const updateConfig = useCallback((newConfig: DaifugoConfig) => {
+    setRoomConfig(newConfig);
+    if (hostSessionRef.current) {
+      hostSessionRef.current.updateConfig(newConfig);
+    }
+  }, []);
+
+  const startGame = useCallback((latestConfig?: DaifugoConfig) => {
     if (hostSessionRef.current) {
       try {
-        hostSessionRef.current.startGame();
+        const configToUse = latestConfig ?? roomConfig;
+        hostSessionRef.current.startGame(configToUse);
       } catch (err: any) {
         setError(err.message);
       }
     }
-  }, []);
+  }, [roomConfig]);
 
   const dispatchPlay = useCallback((cardIds: string[]) => {
     if (hostSessionRef.current) {
@@ -115,11 +137,14 @@ export function useGameSession() {
     peerId,
     myPlayerId,
     players,
+    disconnectedPlayerIds,
+    roomConfig,
     state,
     recentEvents,
     error,
     startHost,
     joinAsClient,
+    updateConfig,
     startGame,
     dispatchPlay,
     dispatchPass,

@@ -51,6 +51,32 @@ describe('LobbyScreen Component', () => {
     expect(screen.getByText('シンプル')).toBeInTheDocument();
   });
 
+  it('チップ対戦モードトグルを切り替えると onUpdateConfig が呼ばれること', () => {
+    const handleUpdateConfig = vi.fn();
+    render(
+      <LobbyScreen
+        isHost={true}
+        peerId="host-123"
+        players={[{ id: 'p1', name: 'Host' }]}
+        error={null}
+        onStartHost={vi.fn()}
+        onJoinClient={vi.fn()}
+        onUpdateConfig={handleUpdateConfig}
+        onStartGame={vi.fn()}
+      />
+    );
+
+    // Switch to host view
+    fireEvent.click(screen.getByText(/部屋を作る \(Host\)/));
+
+    const toggle = screen.getByTestId('chips-mode-toggle');
+    fireEvent.click(toggle);
+
+    expect(handleUpdateConfig).toHaveBeenCalled();
+    const updatedConfig = handleUpdateConfig.mock.calls[0][0];
+    expect(updatedConfig.chipsMode).toBe(true);
+  });
+
   it('ルールボタンをクリックするとルール確認モーダルが開くこと', () => {
     render(
       <LobbyScreen

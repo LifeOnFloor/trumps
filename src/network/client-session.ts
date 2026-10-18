@@ -1,5 +1,6 @@
 import type { GameEvent, SanitizedState } from '../core/types/engine.js';
 import type { DaifugoAction, DaifugoRuleState } from '../core/rules/daifugo/types.js';
+import type { DaifugoConfig } from '../core/rules/daifugo/config.js';
 import type { ITransport } from './transport.js';
 import type { ClientMessage, HostMessage } from './types.js';
 
@@ -9,11 +10,14 @@ export class ClientSession {
   private hostPeerId: string | null = null;
   private players: { id: string; name: string }[] = [];
   private currentState: SanitizedState<DaifugoRuleState> | null = null;
+  private currentConfig: DaifugoConfig | null = null;
 
   private stateChangeListeners: ((state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]) => void)[] = [];
   private actionRejectedListeners: ((reason: string) => void)[] = [];
   private playerDisconnectedListeners: ((playerId: string) => void)[] = [];
+  private playerJoinedListeners: ((player: { id: string; name: string }) => void)[] = [];
   private roomJoinedListeners: ((players: readonly { id: string; name: string }[]) => void)[] = [];
+  private configUpdatedListeners: ((config: DaifugoConfig) => void)[] = [];
 
   constructor(transport: ITransport, player: { id: string; name: string }) {
     this.transport = transport;
@@ -27,6 +31,10 @@ export class ClientSession {
 
   getState(): SanitizedState<DaifugoRuleState> | null {
     return this.currentState;
+  }
+
+  getConfig(): DaifugoConfig | null {
+    return this.currentConfig;
   }
 
   getPlayers(): readonly { id: string; name: string }[] {
@@ -87,10 +95,24 @@ export class ClientSession {
     };
   }
 
+  onPlayerJoined(listener: (player: { id: string; name: string }) => void): () => void {
+    this.playerJoinedListeners.push(listener);
+    return () => {
+      this.playerJoinedListeners = this.playerJoinedListeners.filter((l) => l !== listener);
+    };
+  }
+
   onRoomJoined(listener: (players: readonly { id: string; name: string }[]) => void): () => void {
     this.roomJoinedListeners.push(listener);
     return () => {
       this.roomJoinedListeners = this.roomJoinedListeners.filter((l) => l !== listener);
+    };
+  }
+
+  onConfigUpdated(listener: (config: DaifugoConfig) => void): () => void {
+    this.configUpdatedListeners.push(listener);
+    return () => {
+      this.configUpdatedListeners = this.configUpdatedListeners.filter((l) => l !== listener);
     };
   }
 
@@ -103,6 +125,18 @@ export class ClientSession {
         case 'ROOM_JOINED':
           this.players = msg.players;
           this.roomJoinedListeners.forEach((l) => l(this.players));
+          break;
+
+        case 'PLAYER_JOINED':
+          if (!this.players.some((p) => p.id === msg.player.id)) {
+            this.players = [...this.players, msg.player];
+          }
+          this.playerJoinedListeners.forEach((l) => l(msg.player));
+          break;
+
+        case 'CONFIG_UPDATED':
+          this.currentConfig = msg.config;
+          this.configUpdatedListeners.forEach((l) => l(msg.config));
           break;
 
         case 'GAME_STARTED':

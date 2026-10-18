@@ -9,11 +9,14 @@ export const App: React.FC = () => {
     peerId,
     myPlayerId,
     players,
+    disconnectedPlayerIds,
+    roomConfig,
     state,
     recentEvents,
     error,
     startHost,
     joinAsClient,
+    updateConfig,
     startGame,
     dispatchPlay,
     dispatchPass,
@@ -25,9 +28,11 @@ export const App: React.FC = () => {
         isHost={isHost}
         peerId={peerId}
         players={players}
+        roomConfig={roomConfig}
         error={error}
         onStartHost={startHost}
         onJoinClient={joinAsClient}
+        onUpdateConfig={updateConfig}
         onStartGame={startGame}
       />
     );
@@ -38,6 +43,8 @@ export const App: React.FC = () => {
       state={state}
       myPlayerId={myPlayerId}
       peerId={peerId}
+      disconnectedPlayerIds={disconnectedPlayerIds}
+      roomConfig={roomConfig}
       recentEvents={recentEvents}
       onPlay={dispatchPlay}
       onPass={dispatchPass}
