@@ -57,6 +57,7 @@ export class DaifugoPlugin
       name: p.name,
       hand: hands[idx] ?? [],
       isFinished: false,
+      chips: mergedConfig.chipsMode ? (mergedConfig.initialChips ?? 1000) : undefined,
     }));
 
     // Find starting player: whoever has D_3, or fallback to player 0
@@ -304,6 +305,30 @@ export class DaifugoPlugin
         );
       }
       nextTurnPlayerId = null;
+
+      // Settle chips if chipsMode is enabled
+      if (ruleState.config.chipsMode) {
+        const fullRankings = [...nextRankings, ...nextFoulPlayers];
+        const count = fullRankings.length;
+        nextPlayers = nextPlayers.map((p) => {
+          if (p.chips === undefined) return p;
+          let delta = 0;
+          if (nextFoulPlayers.includes(p.id)) {
+            delta = -300;
+          } else {
+            const rankIdx = nextRankings.indexOf(p.id);
+            if (rankIdx === 0) delta = 200;
+            else if (rankIdx === 1 && count >= 4) delta = 100;
+            else if (rankIdx === count - 2 && count >= 4) delta = -100;
+            else if (rankIdx === count - 1) delta = -200;
+          }
+          return {
+            ...p,
+            chips: Math.max(0, p.chips + delta),
+          };
+        });
+      }
+
       events.push({
         type: 'GAME_OVER',
         payload: {

@@ -10,6 +10,8 @@ export interface DaifugoConfig {
     two: boolean;              // 2上がり禁止（通常時）
     three: boolean;            // 3上がり禁止（革命時）
   };
+  chipsMode?: boolean;         // チップ対戦モード
+  initialChips?: number;       // 初期チップ数
 }
 
 export const DEFAULT_DAIFUGO_CONFIG: DaifugoConfig = {
@@ -24,4 +26,6 @@ export const DEFAULT_DAIFUGO_CONFIG: DaifugoConfig = {
     two: true,
     three: true,
   },
+  chipsMode: false,
+  initialChips: 1000,
 };

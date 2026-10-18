@@ -13,29 +13,42 @@ export const OpponentSeat: React.FC<OpponentSeatProps> = ({
   return (
     <div
       data-testid={`opponent-${player.id}`}
-      className={`flex flex-col items-center p-2 rounded-xl border transition-all ${
+      className={`flex flex-col items-center px-3 py-2 rounded-2xl border transition-all duration-300 min-w-[80px] sm:min-w-[100px] shadow-sm ${
         isCurrentTurn
-          ? 'bg-amber-500/20 border-amber-400 shadow-md ring-2 ring-amber-400'
-          : 'bg-emerald-800/40 border-emerald-700/50'
+          ? 'bg-gradient-to-b from-yellow-500/25 to-amber-600/30 border-yellow-400 ring-2 ring-yellow-400 shadow-yellow-500/20 shadow-lg scale-105'
+          : 'bg-emerald-900/60 border-emerald-700/60 backdrop-blur-sm'
       }`}
     >
-      <div className="flex items-center space-x-1.5 mb-1">
-        <span className="font-bold text-xs sm:text-sm text-gray-100 max-w-[90px] truncate">
+      <div className="flex items-center space-x-1.5 mb-1.5 w-full justify-center">
+        <span className="font-extrabold text-xs sm:text-sm text-gray-100 max-w-[80px] sm:max-w-[110px] truncate">
           {player.name}
         </span>
         {player.isFinished && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500 text-gray-900 font-black">
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-yellow-400 text-gray-950 font-black shadow-sm">
             {player.rankPosition ? `${player.rankPosition}位` : 'Finish'}
           </span>
         )}
       </div>
 
-      <div className="flex items-center space-x-1 text-xs text-emerald-200">
+      <div className="flex items-center space-x-2 text-xs">
         {/* Card back visual */}
-        <div className="w-6 h-8 rounded bg-blue-700 border border-blue-400 shadow flex items-center justify-center font-bold text-[10px] text-white">
-          🂠
+        <div className="flex items-center space-x-1 font-extrabold text-emerald-200">
+          <div className="w-5 h-7 sm:w-6 sm:h-8 rounded bg-gradient-to-br from-blue-700 to-indigo-900 border border-blue-400/80 shadow flex items-center justify-center text-[10px] text-white">
+            🂠
+          </div>
+          <span>× {player.handCount}</span>
         </div>
-        <span className="font-bold">× {player.handCount}</span>
+
+        {/* Chips display if available */}
+        {player.chips !== undefined && (
+          <div
+            data-testid={`chips-${player.id}`}
+            className="flex items-center space-x-0.5 text-yellow-400 font-black text-[11px] bg-emerald-950/80 px-1.5 py-0.5 rounded-full border border-yellow-500/40"
+          >
+            <span>🪙</span>
+            <span>{player.chips.toLocaleString()}</span>
+          </div>
+        )}
       </div>
     </div>
   );

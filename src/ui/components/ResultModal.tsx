@@ -19,9 +19,10 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   return (
     <div
       data-testid="result-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in"
     >
-      <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+      <div className="bg-emerald-950/95 border border-yellow-500/50 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
+        <div className="text-3xl mb-1">🏆</div>
         <h2 className="text-2xl font-black text-yellow-400 mb-4 tracking-wider">
           GAME OVER
         </h2>
@@ -33,10 +34,21 @@ export const ResultModal: React.FC<ResultModalProps> = ({
             return (
               <div
                 key={playerId}
-                className="flex items-center justify-between p-2.5 rounded-lg bg-gray-800/80 border border-gray-700 text-sm"
+                className="flex items-center justify-between p-3 rounded-2xl bg-emerald-900/80 border border-emerald-700/80 text-sm shadow-sm"
               >
-                <span className="font-extrabold text-yellow-500">{title}</span>
-                <span className="font-bold text-gray-200">{player?.name ?? playerId}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="font-black text-yellow-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-yellow-500/30 text-xs">
+                    {title}
+                  </span>
+                  <span className="font-extrabold text-gray-100">{player?.name ?? playerId}</span>
+                </div>
+
+                {player?.chips !== undefined && (
+                  <div className="flex items-center space-x-1 font-black text-yellow-400 text-xs">
+                    <span>🪙</span>
+                    <span>{player.chips.toLocaleString()}</span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -46,7 +58,7 @@ export const ResultModal: React.FC<ResultModalProps> = ({
           <button
             type="button"
             onClick={onRestart}
-            className="w-full py-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-extrabold shadow-lg transition active:scale-95"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black shadow-lg shadow-yellow-500/30 transition active:scale-95"
           >
             もう一度遊ぶ
           </button>

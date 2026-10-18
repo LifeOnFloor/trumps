@@ -37,6 +37,7 @@ export const App: React.FC = () => {
     <TableScreen
       state={state}
       myPlayerId={myPlayerId}
+      peerId={peerId}
       recentEvents={recentEvents}
       onPlay={dispatchPlay}
       onPass={dispatchPass}

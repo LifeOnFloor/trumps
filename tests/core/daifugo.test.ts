@@ -335,4 +335,33 @@ describe('DaifugoPlugin', () => {
       expect(p3Sanitized.handCount).toBeGreaterThan(0);
     });
   });
+
+  describe('7. チップ対戦モード（chipsMode）', () => {
+    it('chipsMode: true の場合、各プレイヤーに初期チップが付与され、ゲーム終了時に順位精算されること', () => {
+      const { plugin, context, ruleState } = createCustomGame(
+        {
+          p1: ['S_3'],
+          p2: ['S_4'],
+          p3: ['S_5'],
+        },
+        { chipsMode: true, initialChips: 1000 }
+      );
+
+      expect(context.players[0]!.chips).toBe(1000);
+      expect(context.players[1]!.chips).toBe(1000);
+
+      // p1 plays S_3 and finishes (1st place)
+      const res1 = plugin.execute(context, ruleState, 'p1', { type: 'PLAY', cardIds: ['S_3'] });
+      // p2 plays S_4 and finishes (2nd place)
+      const res2 = plugin.execute(res1.nextContext, res1.nextRuleState, 'p2', { type: 'PLAY', cardIds: ['S_4'] });
+
+      // Game is over (only p3 remains, 3rd place)
+      expect(res2.nextContext.isGameOver).toBe(true);
+      const p1Final = res2.nextContext.players.find((p) => p.id === 'p1')!;
+      const p3Final = res2.nextContext.players.find((p) => p.id === 'p3')!;
+      // 1st place should gain chips, 3rd place should lose chips
+      expect(p1Final.chips).toBe(1200);
+      expect(p3Final.chips).toBe(800);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { DaifugoRuleState } from '../../core/rules/daifugo/types.js';
 import { useCardSelection } from '../hooks/use-card-selection.js';
@@ -8,10 +8,12 @@ import { PlayerHand } from '../components/PlayerHand.js';
 import { ActionPanel } from '../components/ActionPanel.js';
 import { EventBanner } from '../components/EventBanner.js';
 import { ResultModal } from '../components/ResultModal.js';
+import { RulesModal } from '../components/RulesModal.js';
 
 export interface TableScreenProps {
   state: SanitizedState<DaifugoRuleState>;
   myPlayerId: string;
+  peerId?: string;
   recentEvents: readonly GameEvent[];
   onPlay: (cardIds: string[]) => void;
   onPass: () => void;
@@ -21,6 +23,7 @@ export interface TableScreenProps {
 export const TableScreen: React.FC<TableScreenProps> = ({
   state,
   myPlayerId,
+  peerId,
   recentEvents,
   onPlay,
   onPass,
@@ -28,6 +31,9 @@ export const TableScreen: React.FC<TableScreenProps> = ({
 }) => {
   const { context, ruleState } = state;
   const { players, currentTurnPlayerId, isGameOver, winnerPlayerIds } = context;
+
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const myPlayer = players.find((p) => p.id === myPlayerId);
   const myHand = myPlayer?.hand ?? [];
@@ -63,13 +69,68 @@ export const TableScreen: React.FC<TableScreenProps> = ({
     }
   };
 
+  const handleCopyInviteLink = () => {
+    if (peerId && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('room', peerId);
+      navigator.clipboard.writeText(url.toString());
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
   return (
-    <div className="relative flex flex-col justify-between items-center min-h-screen p-2 sm:p-4 bg-emerald-950 text-white overflow-hidden">
-      {/* Event banner */}
+    <div className="relative flex flex-col justify-between items-center min-h-screen p-2 sm:p-4 bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white overflow-hidden select-none">
+      {/* Event banner toast */}
       <EventBanner events={recentEvents} />
 
+      {/* Rules Modal */}
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        config={ruleState.config}
+        onClose={() => setIsRulesModalOpen(false)}
+      />
+
+      {/* Top Bar: Title & Utility Buttons */}
+      <div className="w-full max-w-4xl flex items-center justify-between px-2 pt-1 pb-2">
+        <div className="flex items-center space-x-2">
+          <span className="text-xl">🃏</span>
+          <span className="font-black text-sm sm:text-base text-yellow-400 tracking-wider">
+            大富豪
+          </span>
+          {ruleState.config.chipsMode && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold">
+              💰 チップ戦
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {peerId && (
+            <button
+              type="button"
+              onClick={handleCopyInviteLink}
+              className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/60 font-bold transition active:scale-95 flex items-center space-x-1"
+            >
+              <span>🔗</span>
+              <span>{copiedLink ? 'コピー済' : '招待リンク'}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            data-testid="table-rules-button"
+            onClick={() => setIsRulesModalOpen(true)}
+            className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-black transition active:scale-95 flex items-center space-x-1"
+          >
+            <span>📋</span>
+            <span>ルール</span>
+          </button>
+        </div>
+      </div>
+
       {/* Opponents row */}
-      <div className="w-full max-w-4xl flex items-center justify-center space-x-2 sm:space-x-4 pt-2">
+      <div className="w-full max-w-4xl flex items-center justify-center space-x-2 sm:space-x-4 px-2">
         {opponents.map((opponent) => (
           <OpponentSeat
             key={opponent.id}
@@ -79,8 +140,8 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         ))}
       </div>
 
-      {/* Center Table */}
-      <div className="w-full flex flex-col items-center justify-center my-auto">
+      {/* Center Table Area */}
+      <div className="w-full flex flex-col items-center justify-center my-auto px-2">
         <GameTable
           lastPlay={ruleState.table.lastPlay}
           isRevolution={ruleState.isRevolution}
@@ -88,18 +149,20 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         />
 
         {/* Turn prompt indicator */}
-        <div className="text-xs sm:text-sm font-extrabold text-emerald-200 mt-2">
+        <div className="text-xs sm:text-sm font-black text-emerald-200 mt-2 flex items-center space-x-1">
           {isMyTurn ? (
-            <span className="text-yellow-400 animate-pulse">★ あなたのターンです！</span>
+            <span className="text-yellow-400 animate-pulse bg-emerald-950/80 px-3 py-1 rounded-full border border-yellow-400/50 shadow-sm">
+              ★ あなたの手番です！
+            </span>
           ) : (
-            <span>
+            <span className="text-emerald-300/80 bg-emerald-950/60 px-3 py-1 rounded-full">
               {players.find((p) => p.id === currentTurnPlayerId)?.name ?? '待機中'} のターン...
             </span>
           )}
         </div>
       </div>
 
-      {/* Bottom Area: Hand & Actions */}
+      {/* Bottom Area: Actions & Hand */}
       <div className="w-full flex flex-col items-center justify-end pb-2">
         <ActionPanel
           isMyTurn={isMyTurn}
@@ -114,6 +177,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
           selectedCardIds={selectedCardIds}
           onToggleSelect={toggleSelect}
           disabled={!isMyTurn}
+          chips={myPlayer?.chips}
         />
       </div>
 
