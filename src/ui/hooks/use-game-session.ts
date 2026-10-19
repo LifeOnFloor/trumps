@@ -7,8 +7,26 @@ import { PeerJsTransport } from '../../network/peerjs-transport.js';
 import { HostSession } from '../../network/host-session.js';
 import { ClientSession } from '../../network/client-session.js';
 
+function getOrCreatePlayerId(prefix: string): string {
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      const key = 'trumps_player_id';
+      const stored = window.sessionStorage.getItem(key);
+      if (stored) return stored;
+      const newId = `${prefix}_${Date.now()}`;
+      window.sessionStorage.setItem(key, newId);
+      return newId;
+    }
+  } catch {
+    // fallback
+  }
+  return `${prefix}_${Date.now()}`;
+}
+
 export function useGameSession() {
   const [isHost, setIsHost] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isHostDisconnected, setIsHostDisconnected] = useState(false);
   const [peerId, setPeerId] = useState<string>('');
   const [myPlayerId, setMyPlayerId] = useState<string>('');
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
@@ -23,13 +41,15 @@ export function useGameSession() {
 
   const startHost = useCallback(
     async (playerName: string, initialConfig: Partial<DaifugoConfig> = DEFAULT_DAIFUGO_CONFIG) => {
+      if (isConnecting || hostSessionRef.current) return;
+      setIsConnecting(true);
+      setError(null);
       try {
-        setError(null);
         setIsHost(true);
         const transport = await PeerJsTransport.create();
         setPeerId(transport.peerId);
 
-        const hostPlayer = { id: `p_${Date.now()}`, name: playerName };
+        const hostPlayer = { id: getOrCreatePlayerId('p_host'), name: playerName };
         setMyPlayerId(hostPlayer.id);
 
         const session = new HostSession(transport, hostPlayer, { config: initialConfig });
@@ -47,19 +67,24 @@ export function useGameSession() {
         });
       } catch (err: any) {
         setError(err.message ?? 'Failed to initialize host');
+        setIsHost(false);
+      } finally {
+        setIsConnecting(false);
       }
     },
-    []
+    [isConnecting]
   );
 
   const joinAsClient = useCallback(async (hostPeerId: string, playerName: string) => {
+    if (isConnecting || clientSessionRef.current) return;
+    setIsConnecting(true);
+    setError(null);
     try {
-      setError(null);
       setIsHost(false);
       const transport = await PeerJsTransport.create();
       setPeerId(transport.peerId);
 
-      const clientPlayer = { id: `p_${Date.now()}`, name: playerName };
+      const clientPlayer = { id: getOrCreatePlayerId('p_client'), name: playerName };
       setMyPlayerId(clientPlayer.id);
 
       const session = new ClientSession(transport, clientPlayer);
@@ -92,11 +117,19 @@ export function useGameSession() {
         setRecentEvents([{ type: 'PLAYER_DISCONNECTED', payload: { playerId } }]);
       });
 
+      session.onHostDisconnected(() => {
+        setIsHostDisconnected(true);
+        setError('ホストが切断しました。');
+      });
+
       await session.joinRoom(hostPeerId);
     } catch (err: any) {
       setError(err.message ?? 'Failed to connect to host');
+      clientSessionRef.current = null;
+    } finally {
+      setIsConnecting(false);
     }
-  }, []);
+  }, [isConnecting]);
 
   const updateConfig = useCallback((newConfig: DaifugoConfig) => {
     setRoomConfig(newConfig);
@@ -150,6 +183,8 @@ export function useGameSession() {
 
   return {
     isHost,
+    isConnecting,
+    isHostDisconnected,
     peerId,
     myPlayerId,
     players,

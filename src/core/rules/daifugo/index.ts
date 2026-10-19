@@ -126,10 +126,13 @@ export class DaifugoPlugin
     action: DaifugoAction
   ): boolean {
     if (context.isGameOver) return false;
-    if (context.currentTurnPlayerId !== playerId) return false;
 
     const player = context.players.find((p) => p.id === playerId);
     if (!player || player.isFinished) return false;
+
+    if (action.type === 'SURRENDER') return true;
+
+    if (context.currentTurnPlayerId !== playerId) return false;
 
     // Handle pending hand actions (7-pass or 10-discard)
     if (ruleState.pendingHandAction) {
@@ -212,7 +215,39 @@ export class DaifugoPlugin
     let nextFoulPlayers = [...ruleState.foulPlayerIds];
     let nextTurnPlayerId: string | null = null;
 
-    if (action.type === 'PASS_CARDS') {
+    if (action.type === 'SURRENDER') {
+      events.push({ type: 'PLAYER_SURRENDERED', payload: { playerId } });
+      nextFoulPlayers.push(playerId);
+      const totalPlayers = nextPlayers.length;
+
+      nextPlayers = nextPlayers.map((p) =>
+        p.id === playerId
+          ? { ...p, hand: [], isFinished: true, rankPosition: totalPlayers }
+          : p
+      );
+
+      if (nextPendingHandAction && nextPendingHandAction.playerId === playerId) {
+        nextPendingHandAction = null;
+      }
+
+      if (nextTable.lastPlay?.playerId === playerId) {
+        events.push({ type: 'TABLE_CLEARED' });
+        nextElevenBack = false;
+        nextTable = {
+          lastPlay: null,
+          lockedSuits: null,
+          isSequenceLocked: false,
+          requiredNextRank: null,
+          passedPlayerIds: [],
+        };
+      }
+
+      if (context.currentTurnPlayerId === playerId) {
+        nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection, 0);
+      } else {
+        nextTurnPlayerId = context.currentTurnPlayerId;
+      }
+    } else if (action.type === 'PASS_CARDS') {
       const pending = ruleState.pendingHandAction;
       if (!pending || pending.type !== 'SEVEN_PASS') {
         throw new Error('No pending seven pass action');

@@ -291,18 +291,19 @@ export class HostSession {
       }
     }
 
-    // If game in progress and disconnected player was current turn, advance turn via pass
+    // If game in progress, drop the disconnected player via SURRENDER
     if (this.gameRunner) {
       const currentContext = this.gameRunner.getContext();
-      if (currentContext.currentTurnPlayerId === disconnected.id && !currentContext.isGameOver) {
+      if (!currentContext.isGameOver) {
         try {
-          if (this.gameRunner.canExecute(disconnected.id, { type: 'PASS' })) {
-            const events = this.gameRunner.execute(disconnected.id, { type: 'PASS' });
+          if (this.gameRunner.canExecute(disconnected.id, { type: 'SURRENDER' })) {
+            const events = this.gameRunner.execute(disconnected.id, { type: 'SURRENDER' });
             for (const player of this.players) {
               const sanitized = this.gameRunner.getSanitizedStateForPlayer(player.id);
+              const sanitizedEvents = sanitizeEventsForPlayer(events, player.id);
               if (player.peerId === this.transport.peerId) {
                 this.notifyStateChange(sanitized, [
-                  ...events,
+                  ...sanitizedEvents,
                   { type: 'PLAYER_DISCONNECTED', payload: { playerId: disconnected.id } },
                 ]);
               } else {
@@ -310,7 +311,7 @@ export class HostSession {
                   type: 'SYNC_STATE',
                   state: sanitized,
                   events: [
-                    ...events,
+                    ...sanitizedEvents,
                     { type: 'PLAYER_DISCONNECTED', payload: { playerId: disconnected.id } },
                   ],
                 });
@@ -318,7 +319,7 @@ export class HostSession {
             }
           }
         } catch {
-          // ignore if cannot pass
+          // ignore
         }
       }
     }

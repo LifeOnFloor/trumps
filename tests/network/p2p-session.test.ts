@@ -219,4 +219,49 @@ describe('P2P Multi-player Session (Host-Client with MemoryTransport)', () => {
     const sanitizedForC2 = sanitizeEventsForPlayer(rawEvents, 'c2_p');
     expect((sanitizedForC2[0]!.payload as any).cards).toBeDefined();
   });
+
+  it('9. 参加連打防止（冪等性）: 同一Peerまたは同一PlayerIdから複数回JOIN_ROOMが送られても増殖しないこと', async () => {
+    // Client 1 sends JOIN_ROOM multiple times (rapid clicks)
+    await client1Session.joinRoom('host_peer');
+    await client1Session.joinRoom('host_peer');
+    await client1Session.joinRoom('host_peer');
+
+    // Host must still have only 2 players (host + client1)
+    expect(hostSession.getPlayers()).toHaveLength(2);
+  });
+
+  it('10. クライアント切断時の安全な継続: ゲーム中にクライアントが切断した場合、脱落扱いとなり残りで進行できること', async () => {
+    await client1Session.joinRoom('host_peer');
+    await client2Session.joinRoom('host_peer');
+    hostSession.startGame();
+
+    const runner = hostSession.getGameRunner()!;
+    expect(runner.getContext().players.filter((p) => !p.isFinished)).toHaveLength(3);
+
+    // Client 2 suddenly disconnects
+    client2Transport.close();
+
+    // After disconnect, client2 should be marked isFinished / dropped
+    const updatedContext = runner.getContext();
+    const c2InGame = updatedContext.players.find((p) => p.id === 'c2_p');
+    expect(c2InGame?.isFinished).toBe(true);
+
+    // Remaining active players should be 2
+    const remainingActive = updatedContext.players.filter((p) => !p.isFinished);
+    expect(remainingActive).toHaveLength(2);
+  });
+
+  it('11. ホスト切断ハンドリング: ホストが切断した場合、クライアントが onHostDisconnected を検知できること', async () => {
+    await client1Session.joinRoom('host_peer');
+
+    let hostDisconnectedCalled = false;
+    client1Session.onHostDisconnected(() => {
+      hostDisconnectedCalled = true;
+    });
+
+    // Host closes transport
+    hostTransport.close();
+
+    expect(hostDisconnectedCalled).toBe(true);
+  });
 });

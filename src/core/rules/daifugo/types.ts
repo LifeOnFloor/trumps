@@ -41,4 +41,5 @@ export type DaifugoAction =
   | { readonly type: 'PLAY'; readonly cardIds: readonly string[] }
   | { readonly type: 'PASS' }
   | { readonly type: 'PASS_CARDS'; readonly cardIds: readonly string[] }
-  | { readonly type: 'DISCARD_CARDS'; readonly cardIds: readonly string[] };
+  | { readonly type: 'DISCARD_CARDS'; readonly cardIds: readonly string[] }
+  | { readonly type: 'SURRENDER' };

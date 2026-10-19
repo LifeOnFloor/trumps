@@ -364,4 +364,44 @@ describe('DaifugoPlugin', () => {
       expect(p3Final.chips).toBe(800);
     });
   });
+
+  describe('8. 途中離脱・降伏（SURRENDER）', () => {
+    it('プレイヤーがSURRENDERを実行すると即座に脱落し、手番が次のプレイヤーへ安全に移行すること', () => {
+      const { plugin, context, ruleState } = createCustomGame({
+        p1: ['S_3', 'H_3'],
+        p2: ['S_4'],
+        p3: ['S_5'],
+      });
+
+      // p1 surrenders during their turn
+      expect(plugin.canExecute(context, ruleState, 'p1', { type: 'SURRENDER' })).toBe(true);
+      const res = plugin.execute(context, ruleState, 'p1', { type: 'SURRENDER' });
+
+      const p1 = res.nextContext.players.find((p) => p.id === 'p1')!;
+      expect(p1.isFinished).toBe(true);
+      expect(p1.hand).toHaveLength(0);
+      expect(res.nextRuleState.foulPlayerIds).toContain('p1');
+      expect(res.events.some((e) => e.type === 'PLAYER_SURRENDERED')).toBe(true);
+
+      // Turn moves to p2
+      expect(res.nextContext.currentTurnPlayerId).toBe('p2');
+    });
+
+    it('3人中2人が脱落または上がった場合、即座にGAME_OVERとなること', () => {
+      const { plugin, context, ruleState } = createCustomGame({
+        p1: ['S_3'],
+        p2: ['S_4'],
+        p3: ['S_5'],
+      });
+
+      // p1 surrenders
+      const res1 = plugin.execute(context, ruleState, 'p1', { type: 'SURRENDER' });
+      expect(res1.nextContext.isGameOver).toBe(false);
+
+      // p2 surrenders -> only p3 left -> Game Over!
+      const res2 = plugin.execute(res1.nextContext, res1.nextRuleState, 'p2', { type: 'SURRENDER' });
+      expect(res2.nextContext.isGameOver).toBe(true);
+      expect(res2.nextContext.winnerPlayerIds[0]).toBe('p3');
+    });
+  });
 });

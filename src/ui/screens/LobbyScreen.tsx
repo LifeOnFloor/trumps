@@ -13,6 +13,7 @@ export interface LobbyScreenProps {
   players: readonly { id: string; name: string }[];
   roomConfig?: DaifugoConfig;
   error: string | null;
+  isConnecting?: boolean;
   onStartHost: (playerName: string, config: DaifugoConfig) => void;
   onJoinClient: (hostPeerId: string, playerName: string) => void;
   onUpdateConfig?: (config: DaifugoConfig) => void;
@@ -25,6 +26,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   players,
   roomConfig,
   error,
+  isConnecting = false,
   onStartHost,
   onJoinClient,
   onUpdateConfig,
@@ -175,11 +177,12 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
+                disabled={isConnecting}
                 onClick={() => {
                   setMode('host');
                   onStartHost(playerName, config);
                 }}
-                className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 flex items-center justify-center space-x-1.5"
+                className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 flex items-center justify-center space-x-1.5 disabled:opacity-50"
               >
                 <span>👑</span>
                 <span>{t.lobby.createRoom}</span>
@@ -372,10 +375,10 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             {/* Start Button */}
             <button
               type="button"
-              disabled={players.length < 3}
+              disabled={players.length < 3 || isConnecting}
               onClick={() => onStartGame(config)}
               className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-xl transition active:scale-95 ${
-                players.length >= 3
+                players.length >= 3 && !isConnecting
                   ? 'bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-gray-950 ring-2 ring-yellow-300 shadow-yellow-500/30'
                   : 'bg-emerald-950/80 text-gray-400 border border-emerald-800 cursor-not-allowed opacity-60'
               }`}
@@ -454,11 +457,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
             <button
               type="button"
-              disabled={!targetPeerId.trim()}
+              disabled={!targetPeerId.trim() || isConnecting}
               onClick={() => onJoinClient(targetPeerId.trim(), playerName)}
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t.lobby.enterRoom}
+              {isConnecting ? '接続中...' : t.lobby.enterRoom}
             </button>
 
             <button

@@ -18,6 +18,7 @@ export class ClientSession {
   private playerJoinedListeners: ((player: { id: string; name: string }) => void)[] = [];
   private roomJoinedListeners: ((players: readonly { id: string; name: string }[]) => void)[] = [];
   private configUpdatedListeners: ((config: DaifugoConfig) => void)[] = [];
+  private hostDisconnectedListeners: (() => void)[] = [];
 
   constructor(transport: ITransport, player: { id: string; name: string }) {
     this.transport = transport;
@@ -116,6 +117,13 @@ export class ClientSession {
     };
   }
 
+  onHostDisconnected(listener: () => void): () => void {
+    this.hostDisconnectedListeners.push(listener);
+    return () => {
+      this.hostDisconnectedListeners = this.hostDisconnectedListeners.filter((l) => l !== listener);
+    };
+  }
+
   private setupTransportHandlers(): void {
     this.transport.onReceive((_, rawData) => {
       const msg = rawData as HostMessage;
@@ -157,6 +165,13 @@ export class ClientSession {
           this.players = this.players.filter((p) => p.id !== msg.playerId);
           this.playerDisconnectedListeners.forEach((l) => l(msg.playerId));
           break;
+      }
+    });
+
+    this.transport.onDisconnect((fromPeerId) => {
+      if (this.hostPeerId && fromPeerId === this.hostPeerId) {
+        this.hostPeerId = null;
+        this.hostDisconnectedListeners.forEach((l) => l());
       }
     });
   }
