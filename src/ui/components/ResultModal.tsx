@@ -44,8 +44,10 @@ export const ResultModal: React.FC<ResultModalProps> = ({
                 </div>
 
                 {player?.chips !== undefined && (
-                  <div className="flex items-center space-x-1 font-black text-yellow-400 text-xs">
-                    <span>🪙</span>
+                  <div className={`flex items-center space-x-1 font-black text-xs ${
+                    player.chips < 0 ? 'text-red-400 font-bold' : 'text-yellow-400'
+                  }`}>
+                    <span>{player.chips < 0 ? '🔴 借金' : '🪙'}</span>
                     <span>{player.chips.toLocaleString()}</span>
                   </div>
                 )}

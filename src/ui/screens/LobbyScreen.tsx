@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { DaifugoConfig, SuitLockType, NineEffectType } from '../../core/rules/daifugo/config.js';
 import { DEFAULT_DAIFUGO_CONFIG, resolveRuleConflicts } from '../../core/rules/daifugo/config.js';
+import { CHIP_PRESETS, type ChipPreset, type BankruptcyRule, type AnteType } from '../../core/types/chips.js';
 import { useTranslation } from '../../i18n/context.js';
 import { LanguageSelector } from '../components/LanguageSelector.js';
 import { GameSelector } from '../components/GameSelector.js';
@@ -36,6 +37,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 }) => {
   const { t } = useTranslation();
   const [mode, setMode] = useState<'select' | 'host' | 'client'>('select');
+  const [chipSubMode, setChipSubMode] = useState<'preset' | 'custom'>('preset');
   const [selectedGameId, setSelectedGameId] = useState('daifugo');
   const [playerName, setPlayerName] = useState('プレイヤー');
   const [targetPeerId, setTargetPeerId] = useState('');
@@ -117,6 +119,31 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
   const setChipSettlementType = (chipSettlementType: 'ranking_transfer' | 'pot_split') => {
     updateAndNotifyConfig({ ...config, chipSettlementType });
+  };
+
+  const applyChipPreset = (presetKey: ChipPreset) => {
+    const presetDef = CHIP_PRESETS[presetKey];
+    updateAndNotifyConfig({
+      ...config,
+      preset: presetKey,
+      ...presetDef.config,
+      ante: presetDef.config.baseAnte,
+    });
+  };
+
+  const setBankruptcyRule = (bankruptcyRule: BankruptcyRule) => {
+    updateAndNotifyConfig({ ...config, bankruptcyRule, preset: 'custom' });
+  };
+
+  const setAnteType = (anteType: AnteType, baseAnte?: number) => {
+    const anteVal = anteType === 'none' ? 0 : (baseAnte ?? config.baseAnte ?? 50);
+    updateAndNotifyConfig({
+      ...config,
+      anteType,
+      baseAnte: anteVal,
+      ante: anteVal,
+      preset: 'custom',
+    });
   };
 
   const handleApplyPreset = (configPartial: Partial<DaifugoConfig>) => {
@@ -312,79 +339,192 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
               {config.chipsMode && (
                 <div
-                  className="pt-2.5 border-t border-emerald-800/80 space-y-2.5 text-xs animate-in fade-in duration-200"
+                  className="pt-2.5 border-t border-emerald-800/80 space-y-3 text-xs animate-in fade-in duration-200"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Starting Chips */}
-                  <div className="space-y-1">
-                    <div className="text-[11px] font-bold text-emerald-300">{t.lobby.initialChipsLabel}</div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[500, 1000, 5000].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setInitialChips(val)}
-                          className={`py-1 rounded-lg font-bold text-[11px] border transition-all ${
-                            (config.initialChips ?? 1000) === val
-                              ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
-                              : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
-                          }`}
-                        >
-                          {val.toLocaleString()}枚
-                        </button>
-                      ))}
-                    </div>
+                  {/* Mode Selector Tabs: Preset vs Custom */}
+                  <div className="flex rounded-xl bg-emerald-950/90 p-1 border border-emerald-800">
+                    <button
+                      type="button"
+                      data-testid="chip-tab-preset"
+                      onClick={() => setChipSubMode('preset')}
+                      className={`flex-1 py-1.5 rounded-lg font-black text-xs transition flex items-center justify-center space-x-1 ${
+                        chipSubMode === 'preset'
+                          ? 'bg-yellow-400 text-gray-950 shadow-sm'
+                          : 'text-emerald-300 hover:text-white'
+                      }`}
+                    >
+                      <span>⚡</span>
+                      <span>テンプレから選ぶ</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="chip-tab-custom"
+                      onClick={() => setChipSubMode('custom')}
+                      className={`flex-1 py-1.5 rounded-lg font-black text-xs transition flex items-center justify-center space-x-1 ${
+                        chipSubMode === 'custom'
+                          ? 'bg-yellow-400 text-gray-950 shadow-sm'
+                          : 'text-emerald-300 hover:text-white'
+                      }`}
+                    >
+                      <span>🛠️</span>
+                      <span>カスタム詳細設定</span>
+                    </button>
                   </div>
 
-                  {/* Ante */}
-                  <div className="space-y-1">
-                    <div className="text-[11px] font-bold text-emerald-300">{t.lobby.anteLabel}</div>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {[0, 50, 100, 200].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setAnte(val)}
-                          className={`py-1 rounded-lg font-bold text-[11px] border transition-all ${
-                            (config.ante ?? 0) === val
-                              ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
-                              : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
-                          }`}
-                        >
-                          {val === 0 ? 'なし' : `${val}枚`}
-                        </button>
-                      ))}
+                  {chipSubMode === 'preset' ? (
+                    /* 4 Quick Presets */
+                    <div className="grid grid-cols-2 gap-2">
+                      {(Object.keys(CHIP_PRESETS) as ChipPreset[]).map((pKey) => {
+                        const p = CHIP_PRESETS[pKey];
+                        const isSelected = config.preset === pKey;
+                        return (
+                          <button
+                            key={pKey}
+                            type="button"
+                            data-testid={`chip-preset-${pKey}`}
+                            onClick={() => applyChipPreset(pKey)}
+                            className={`p-2.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                              isSelected
+                                ? 'bg-yellow-400/15 border-yellow-400 text-yellow-200 shadow-md ring-1 ring-yellow-400'
+                                : 'bg-emerald-900/40 border-emerald-800 text-emerald-200 hover:bg-emerald-800/50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-black text-xs text-yellow-300 flex items-center space-x-1">
+                                <span>{p.icon}</span>
+                                <span>{p.title}</span>
+                              </span>
+                              {isSelected && <span className="text-[10px] bg-yellow-400 text-gray-950 font-bold px-1 rounded">選択中</span>}
+                            </div>
+                            <div className="text-[10px] text-emerald-300/90 leading-tight">{p.desc}</div>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </div>
+                  ) : (
+                    /* Custom Fine-Grained Settings */
+                    <div className="space-y-2.5">
+                      {/* Starting Chips */}
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-bold text-emerald-300">{t.lobby.initialChipsLabel}</div>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[500, 1000, 5000, 10000].map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => setInitialChips(val)}
+                              className={`py-1 rounded-lg font-bold text-[11px] border transition-all ${
+                                (config.initialChips ?? 1000) === val
+                                  ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                                  : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
+                              }`}
+                            >
+                              {val.toLocaleString()}枚
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                  {/* Settlement Type */}
-                  <div className="space-y-1">
-                    <div className="text-[11px] font-bold text-emerald-300">{t.lobby.settlementTypeLabel}</div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setChipSettlementType('ranking_transfer')}
-                        className={`py-1 px-1.5 rounded-lg font-bold text-[11px] border transition-all ${
-                          (config.chipSettlementType ?? 'ranking_transfer') === 'ranking_transfer'
-                            ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
-                            : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
-                        }`}
-                      >
-                        {t.lobby.settlementRanking}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setChipSettlementType('pot_split')}
-                        className={`py-1 px-1.5 rounded-lg font-bold text-[11px] border transition-all ${
-                          config.chipSettlementType === 'pot_split'
-                            ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
-                            : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
-                        }`}
-                      >
-                        {t.lobby.settlementPotSplit}
-                      </button>
+                      {/* Ante Mode */}
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-bold text-emerald-300">アンティ (参加料) 方式</div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setAnteType('none', 0)}
+                            className={`py-1 rounded-lg font-bold text-[11px] border transition-all ${
+                              (config.anteType ?? 'none') === 'none'
+                                ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                                : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
+                            }`}
+                          >
+                            なし (0枚)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAnteType('fixed', 50)}
+                            className={`py-1 rounded-lg font-bold text-[11px] border transition-all ${
+                              config.anteType === 'fixed'
+                                ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                                : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
+                            }`}
+                          >
+                            固定 (50枚)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAnteType('escalating', 50)}
+                            className={`py-1 rounded-lg font-bold text-[11px] border transition-all ${
+                              config.anteType === 'escalating'
+                                ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                                : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
+                            }`}
+                          >
+                            漸増 (+50/回)
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bankruptcy Rule: Debt vs Bust */}
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-bold text-emerald-300">破産・借金ルール (所持チップ0時)</div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setBankruptcyRule('allow_debt')}
+                            className={`py-1 px-1.5 rounded-lg font-bold text-[11px] border transition-all ${
+                              (config.bankruptcyRule ?? 'allow_debt') === 'allow_debt'
+                                ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                                : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
+                            }`}
+                          >
+                            🀄 借金OK (麻雀黒棒)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBankruptcyRule('bust_game_over')}
+                            className={`py-1 px-1.5 rounded-lg font-bold text-[11px] border transition-all ${
+                              config.bankruptcyRule === 'bust_game_over'
+                                ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                                : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
+                            }`}
+                          >
+                            💥 破産脱落 (Bust)
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Settlement Type */}
+                      <div className="space-y-1">
+                        <div className="text-[11px] font-bold text-emerald-300">{t.lobby.settlementTypeLabel}</div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setChipSettlementType('ranking_transfer')}
+                            className={`py-1 px-1.5 rounded-lg font-bold text-[11px] border transition-all ${
+                              (config.chipSettlementType ?? 'ranking_transfer') === 'ranking_transfer'
+                                ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                                : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
+                            }`}
+                          >
+                            {t.lobby.settlementRanking}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setChipSettlementType('pot_split')}
+                            className={`py-1 px-1.5 rounded-lg font-bold text-[11px] border transition-all ${
+                              config.chipSettlementType === 'pot_split'
+                                ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                                : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
+                            }`}
+                          >
+                            {t.lobby.settlementPotSplit}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -579,14 +719,26 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 {/* Chips details badges */}
                 {config.chipsMode && (
                   <>
+                    {config.preset && config.preset !== 'custom' && (
+                      <span className="px-2 py-0.5 rounded-lg bg-yellow-400 text-gray-950 font-black text-[11px]">
+                        {CHIP_PRESETS[config.preset]?.icon} {CHIP_PRESETS[config.preset]?.title}
+                      </span>
+                    )}
                     <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
                       初期: {(config.initialChips ?? 1000).toLocaleString()}枚
                     </span>
-                    {(config.ante ?? 0) > 0 && (
-                      <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
-                        アンティ: {config.ante}枚
+                    {config.anteType === 'escalating' ? (
+                      <span className="px-2 py-0.5 rounded-lg bg-amber-500/25 text-amber-300 border border-amber-400/50 font-bold text-[11px]">
+                        漸増アンティ (+{config.escalationStep ?? 50}/回)
                       </span>
-                    )}
+                    ) : (config.baseAnte ?? config.ante ?? 0) > 0 ? (
+                      <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
+                        アンティ: {config.baseAnte ?? config.ante}枚
+                      </span>
+                    ) : null}
+                    <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
+                      {config.bankruptcyRule === 'bust_game_over' ? '💥 破産脱落' : '🀄 借金OK'}
+                    </span>
                     <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
                       {config.chipSettlementType === 'pot_split' ? 'ポット配分' : '順位間移動'}
                     </span>

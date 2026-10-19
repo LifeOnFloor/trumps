@@ -9,6 +9,7 @@ import type {
   SanitizedState,
 } from '../../types/engine.js';
 import { createDeck, dealHands, shuffleDeck } from '../../utils/deck.js';
+import { calculateAnte } from '../../types/chips.js';
 import type { DaifugoConfig } from './config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from './config.js';
 import { executeTaxCardExchange } from './exchange.js';
@@ -71,17 +72,26 @@ export class DaifugoPlugin
     }));
 
     let initialPot = 0;
-    if (mergedConfig.chipsMode && (mergedConfig.ante ?? 0) > 0) {
-      const anteAmount = mergedConfig.ante!;
-      initialPlayers = initialPlayers.map((p) => {
-        if (p.chips === undefined) return p;
-        const paid = Math.min(p.chips, anteAmount);
-        initialPot += paid;
-        return {
-          ...p,
-          chips: p.chips - paid,
-        };
-      });
+    if (mergedConfig.chipsMode) {
+      const anteConfig = {
+        ...mergedConfig,
+        anteType: mergedConfig.anteType ?? (mergedConfig.ante ? 'fixed' : 'none'),
+        baseAnte: mergedConfig.baseAnte ?? mergedConfig.ante ?? 0,
+      };
+      const anteAmount = calculateAnte(anteConfig as any, options?.previousRankings ? 1 : 0);
+      const allowDebt = mergedConfig.bankruptcyRule === 'allow_debt';
+
+      if (anteAmount > 0) {
+        initialPlayers = initialPlayers.map((p) => {
+          if (p.chips === undefined) return p;
+          const paid = allowDebt ? anteAmount : Math.min(Math.max(0, p.chips), anteAmount);
+          initialPot += paid;
+          return {
+            ...p,
+            chips: p.chips - paid,
+          };
+        });
+      }
     }
 
     // If previousRankings exists and cardExchange is enabled, execute tax card exchange

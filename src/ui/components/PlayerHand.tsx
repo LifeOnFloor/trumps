@@ -37,9 +37,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
           {chips !== undefined && (
             <div
               data-testid="my-chips"
-              className="flex items-center space-x-1 font-black text-yellow-400 bg-emerald-950/90 px-3 py-1 rounded-full border border-yellow-500/50 shadow-sm"
+              className={`flex items-center space-x-1 font-black px-3 py-1 rounded-full border shadow-sm ${
+                chips < 0
+                  ? 'bg-red-950/90 text-red-400 border-red-500/70 animate-pulse'
+                  : 'bg-emerald-950/90 text-yellow-400 border-yellow-500/50'
+              }`}
             >
-              <span>🪙</span>
+              <span>{chips < 0 ? '🔴 借金' : '🪙'}</span>
               <span>{chips.toLocaleString()}</span>
             </div>
           )}

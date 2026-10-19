@@ -27,6 +27,7 @@ export function settleChips(params: SettleChipsParams): SettleChipsResult {
 
   const rate = config.transferRate ?? 100;
   const settlementType = config.chipSettlementType ?? 'ranking_transfer';
+  const allowDebt = config.bankruptcyRule === 'allow_debt';
 
   // Map to mutable chips tracker
   const chipsMap = new Map<string, number>();
@@ -40,7 +41,7 @@ export function settleChips(params: SettleChipsParams): SettleChipsResult {
     // Collect foul penalties into the pool
     for (const foulId of foulPlayerIds) {
       const current = chipsMap.get(foulId) ?? 0;
-      const penalty = Math.min(current, rate * 2);
+      const penalty = allowDebt ? rate * 2 : Math.min(Math.max(0, current), rate * 2);
       chipsMap.set(foulId, current - penalty);
       pool += penalty;
     }
@@ -90,7 +91,7 @@ export function settleChips(params: SettleChipsParams): SettleChipsResult {
   // 1. Process foul penalties: transfer penalty to bonusPool (which goes to 1st place)
   for (const foulId of foulPlayerIds) {
     const current = chipsMap.get(foulId) ?? 0;
-    const penalty = Math.min(current, rate * 2);
+    const penalty = allowDebt ? rate * 2 : Math.min(Math.max(0, current), rate * 2);
     chipsMap.set(foulId, current - penalty);
     bonusPool += penalty;
   }
@@ -105,7 +106,7 @@ export function settleChips(params: SettleChipsParams): SettleChipsResult {
 
     // Last place pays 2x rate to 1st place
     const lastCurrent = chipsMap.get(lastId) ?? 0;
-    const transferToFirst = Math.min(lastCurrent, rate * 2);
+    const transferToFirst = allowDebt ? rate * 2 : Math.min(Math.max(0, lastCurrent), rate * 2);
     chipsMap.set(lastId, lastCurrent - transferToFirst);
     chipsMap.set(firstId, (chipsMap.get(firstId) ?? 0) + transferToFirst);
 
@@ -114,7 +115,7 @@ export function settleChips(params: SettleChipsParams): SettleChipsResult {
       const secondId = validRankings[1]!;
       const secondLastId = validRankings[count - 2]!;
       const secondLastCurrent = chipsMap.get(secondLastId) ?? 0;
-      const transferToSecond = Math.min(secondLastCurrent, rate);
+      const transferToSecond = allowDebt ? rate : Math.min(Math.max(0, secondLastCurrent), rate);
       chipsMap.set(secondLastId, secondLastCurrent - transferToSecond);
       chipsMap.set(secondId, (chipsMap.get(secondId) ?? 0) + transferToSecond);
     }

@@ -9,10 +9,10 @@ import type { SanitizedState } from '../../src/core/types/engine.js';
 import type { DaifugoRuleState } from '../../src/core/rules/daifugo/types.js';
 
 describe('Chips Settings UI and Badges', () => {
-  it('displays rich chip options when chipsMode is toggled on in LobbyScreen', () => {
+  it('supports template presets and custom settings tabs in LobbyScreen', () => {
     const onUpdateConfig = vi.fn();
 
-    const { rerender } = render(
+    render(
       <I18nProvider>
         <LobbyScreen
           isHost={true}
@@ -31,47 +31,48 @@ describe('Chips Settings UI and Badges', () => {
     // Click "部屋を作る (Host)" to enter host mode
     fireEvent.click(screen.getByText(/部屋を作る \(Host\)/));
 
-    // Initially when chipsMode is false, rich settings are not displayed
-    expect(screen.queryByText('初期チップ')).toBeNull();
+    // Initially when chipsMode is false, tabs are not displayed
+    expect(screen.queryByTestId('chip-tab-preset')).toBeNull();
 
-    // Clicking the entire chips-mode-row toggles chipsMode to true and immediately expands settings!
+    // Clicking the entire chips-mode-row toggles chipsMode to true
     const chipsRow = screen.getByTestId('chips-mode-row');
     fireEvent.click(chipsRow);
     expect(onUpdateConfig).toHaveBeenCalledWith(
       expect.objectContaining({ chipsMode: true })
     );
 
-    // Now rich options should be visible immediately
-    expect(screen.getByText('初期チップ')).toBeDefined();
-    expect(screen.getByText('アンティ (参加費)')).toBeDefined();
-    expect(screen.getByText('精算方式')).toBeDefined();
-    expect(screen.getByText('5,000枚')).toBeDefined();
+    // Now template tabs and preset buttons should be visible
+    expect(screen.getByTestId('chip-tab-preset')).toBeDefined();
+    expect(screen.getByTestId('chip-tab-custom')).toBeDefined();
+    expect(screen.getByTestId('chip-preset-high_roller')).toBeDefined();
 
-    // Clicking 5,000枚 triggers update with initialChips: 5000
-    fireEvent.click(screen.getByText('5,000枚'));
+    // Clicking high roller preset sets initialChips: 5000 and escalating ante
+    fireEvent.click(screen.getByTestId('chip-preset-high_roller'));
     expect(onUpdateConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ initialChips: 5000 })
+      expect.objectContaining({
+        preset: 'high_roller',
+        initialChips: 5000,
+        anteType: 'escalating',
+      })
     );
 
-    // Clicking 100枚 ante
-    fireEvent.click(screen.getByText('100枚'));
-    expect(onUpdateConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ ante: 100 })
-    );
+    // Switch to Custom Details tab
+    fireEvent.click(screen.getByTestId('chip-tab-custom'));
+    expect(screen.getByText('破産・借金ルール (所持チップ0時)')).toBeDefined();
 
-    // Clicking pot_split mode
-    fireEvent.click(screen.getByText('ポット配分 (上位入賞比率)'));
+    // Click Allow Debt (Mahjong black stick)
+    fireEvent.click(screen.getByText(/借金OK/));
     expect(onUpdateConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ chipSettlementType: 'pot_split' })
+      expect.objectContaining({ bankruptcyRule: 'allow_debt' })
     );
   });
 
-  it('renders pot badge on TableScreen when pot > 0 and chipsMode is active', () => {
+  it('renders pot badge and debt warning on TableScreen', () => {
     const dummyState: SanitizedState<DaifugoRuleState> = {
       context: {
         gameId: 'g1',
         players: [
-          { id: 'p1', name: 'Alice', handCount: 5, isFinished: false, chips: 950 },
+          { id: 'p1', name: 'Alice', handCount: 5, isFinished: false, chips: -150 },
           { id: 'p2', name: 'Bob', handCount: 5, isFinished: false, chips: 950 },
         ],
         currentTurnPlayerId: 'p1',
@@ -115,5 +116,10 @@ describe('Chips Settings UI and Badges', () => {
     const potBadge = screen.getByTestId('pot-badge');
     expect(potBadge).toBeDefined();
     expect(potBadge.textContent).toContain('150');
+
+    // My chips (Alice) has debt: -150
+    const myChips = screen.getByTestId('my-chips');
+    expect(myChips.textContent).toContain('借金');
+    expect(myChips.textContent).toContain('-150');
   });
 });

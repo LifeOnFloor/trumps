@@ -56,9 +56,13 @@ export const OpponentSeat: React.FC<OpponentSeatProps> = ({
         {player.chips !== undefined && (
           <div
             data-testid={`chips-${player.id}`}
-            className="flex items-center space-x-0.5 text-yellow-400 font-black text-[11px] bg-emerald-950/80 px-1.5 py-0.5 rounded-full border border-yellow-500/40"
+            className={`flex items-center space-x-0.5 font-black text-[11px] px-1.5 py-0.5 rounded-full border ${
+              player.chips < 0
+                ? 'bg-red-950/90 text-red-400 border-red-500/60 shadow-sm animate-pulse'
+                : 'bg-emerald-950/80 text-yellow-400 border-yellow-500/40'
+            }`}
           >
-            <span>🪙</span>
+            <span>{player.chips < 0 ? '🔴 借金' : '🪙'}</span>
             <span>{player.chips.toLocaleString()}</span>
           </div>
         )}
