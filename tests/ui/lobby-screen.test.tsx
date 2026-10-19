@@ -45,7 +45,7 @@ describe('LobbyScreen Component', () => {
     expect(handleStartHost).toHaveBeenCalledTimes(1);
 
     // In Host screen, verify presets & chips mode
-    expect(screen.getByText('カジノチップ対戦モード')).toBeInTheDocument();
+    expect(screen.getByTestId('chips-mode-row')).toBeInTheDocument();
     expect(screen.getByText('スタンダード')).toBeInTheDocument();
     expect(screen.getByText('ローカル全盛り')).toBeInTheDocument();
     expect(screen.getByText('シンプル')).toBeInTheDocument();

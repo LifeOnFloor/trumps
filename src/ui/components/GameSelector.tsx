@@ -64,7 +64,7 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
             type="button"
             onClick={() => setQuery('')}
             className="absolute inset-y-0 right-0 flex items-center pr-3 text-emerald-400 hover:text-white"
-            aria-label="検索クリア"
+            aria-label={language === 'en' ? 'Clear search' : '検索クリア'}
           >
             ✕
           </button>
@@ -104,6 +104,8 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
                 ? t.catalog.allPlayers
                 : count === 4
                 ? t.catalog.fourPlusPlayers
+                : language === 'en'
+                ? `${count}P`
                 : `${count}人`;
             return (
               <button
@@ -183,7 +185,14 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
 
               <div className="flex items-center justify-between pt-1 border-t border-emerald-800/40 text-[10px] text-emerald-300 font-medium">
                 <span>
-                  👥 {game.players.min === game.players.max ? `${game.players.min}人` : `${game.players.min}〜${game.players.max}人`}
+                  👥{' '}
+                  {game.players.min === game.players.max
+                    ? language === 'en'
+                      ? `${game.players.min}P`
+                      : `${game.players.min}人`
+                    : language === 'en'
+                    ? `${game.players.min}-${game.players.max}P`
+                    : `${game.players.min}〜${game.players.max}人`}
                 </span>
                 <button
                   type="button"
@@ -192,9 +201,9 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
                     setDetailGame(game);
                   }}
                   className="text-yellow-400 hover:text-yellow-200 font-bold px-1 hover:underline"
-                  title="詳細を見る"
+                  title={language === 'en' ? 'View details' : '詳細を見る'}
                 >
-                  ℹ️ 詳細
+                  ℹ️ {language === 'en' ? 'Details' : '詳細'}
                 </button>
               </div>
             </div>
@@ -243,7 +252,9 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
             <div className="text-xs text-emerald-100/90 leading-relaxed space-y-2">
               <p>{detailGame.description[language] || detailGame.description.ja}</p>
               <div className="p-2.5 rounded-xl bg-emerald-900/60 border border-emerald-700/60">
-                <div className="font-bold text-yellow-300 mb-0.5">ルール概要:</div>
+                <div className="font-bold text-yellow-300 mb-0.5">
+                  {language === 'en' ? 'Rules Summary:' : 'ルール概要:'}
+                </div>
                 <p className="text-[11px] text-emerald-200">
                   {detailGame.rulesSummary[language] || detailGame.rulesSummary.ja}
                 </p>
@@ -251,8 +262,20 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
             </div>
 
             <div className="flex items-center justify-between text-xs font-bold pt-2 border-t border-emerald-800">
-              <span>プレイ人数: {detailGame.players.min}〜{detailGame.players.max}人</span>
-              <span>{detailGame.hasChips ? '💰 チップ戦対応' : 'チップ戦なし'}</span>
+              <span>
+                {language === 'en'
+                  ? `Players: ${detailGame.players.min}-${detailGame.players.max}`
+                  : `プレイ人数: ${detailGame.players.min}〜${detailGame.players.max}人`}
+              </span>
+              <span>
+                {detailGame.hasChips
+                  ? language === 'en'
+                    ? '💰 Chips'
+                    : '💰 チップ戦対応'
+                  : language === 'en'
+                  ? 'No Chips'
+                  : 'チップ戦なし'}
+              </span>
             </div>
 
             <button
@@ -270,7 +293,13 @@ export const GameSelector: React.FC<GameSelectorProps> = ({
                   : 'bg-emerald-950 text-gray-400 border border-emerald-800 cursor-not-allowed opacity-60'
               }`}
             >
-              {detailGame.isPlayable ? 'このゲームを選択' : '開発中 (Coming Soon)'}
+              {detailGame.isPlayable
+                ? language === 'en'
+                  ? 'Select Game'
+                  : 'このゲームを選択'
+                : language === 'en'
+                ? 'Coming Soon'
+                : '開発中 (Coming Soon)'}
             </button>
           </div>
         </div>

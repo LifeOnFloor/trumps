@@ -49,7 +49,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       data-testid="settings-modal"
       role="dialog"
       aria-modal="true"
-      aria-label="設定"
+      aria-label={t.settings.title}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
@@ -60,14 +60,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="flex items-center justify-between pb-2 border-b border-emerald-800">
           <div className="flex items-center space-x-2">
             <span className="text-xl">⚙️</span>
-            <h2 className="text-base font-black text-yellow-400 tracking-wider">設定</h2>
+            <h2 className="text-base font-black text-yellow-400 tracking-wider">{t.settings.title}</h2>
           </div>
           <button
             type="button"
             data-testid="close-settings-button"
             onClick={onClose}
             className="w-7 h-7 flex items-center justify-center rounded-full bg-emerald-900/80 hover:bg-emerald-800 text-gray-300 hover:text-white font-bold transition text-xs"
-            aria-label="閉じる"
+            aria-label={t.settings.close}
           >
             ✕
           </button>
@@ -78,7 +78,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-900/60 border border-emerald-800">
             <span className="font-bold flex items-center space-x-1.5">
               <span>{isMuted ? '🔇' : '🔊'}</span>
-              <span>効果音</span>
+              <span>{t.settings.sound}</span>
             </span>
             <button
               type="button"
@@ -98,7 +98,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-900/60 border border-emerald-800">
             <span className="font-bold flex items-center space-x-1.5">
               <span>🌐</span>
-              <span>言語</span>
+              <span>{t.settings.language}</span>
             </span>
             <LanguageSelector />
           </div>
@@ -115,7 +115,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <span className="flex items-center space-x-1.5">
               <span>📋</span>
-              <span>{t.app.rules}確認</span>
+              <span>{t.settings.checkRules}</span>
             </span>
             <span>➔</span>
           </button>
@@ -148,7 +148,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               className="w-full flex items-center justify-center space-x-1.5 p-2.5 rounded-2xl bg-red-950/80 hover:bg-red-900/80 border border-red-700 text-red-300 font-bold transition active:scale-95"
             >
               <span>🚪</span>
-              <span>部屋を退出する</span>
+              <span>{t.settings.leaveRoom}</span>
             </button>
           )}
         </div>

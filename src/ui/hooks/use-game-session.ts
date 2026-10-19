@@ -7,6 +7,7 @@ import type { DaifugoRuleState } from '../../core/rules/daifugo/types.js';
 import { PeerJsTransport } from '../../network/peerjs-transport.js';
 import { HostSession } from '../../network/host-session.js';
 import { ClientSession } from '../../network/client-session.js';
+import { useTranslation } from '../../i18n/context.js';
 
 function getOrCreatePlayerId(prefix: string): string {
   try {
@@ -25,6 +26,7 @@ function getOrCreatePlayerId(prefix: string): string {
 }
 
 export function useGameSession() {
+  const { t } = useTranslation();
   const [isHost, setIsHost] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isHostDisconnected, setIsHostDisconnected] = useState(false);
@@ -155,7 +157,7 @@ export function useGameSession() {
 
       session.onHostDisconnected(() => {
         setIsHostDisconnected(true);
-        setError('ホストが切断しました。');
+        setError(t.events.playerDisconnected);
       });
 
       await session.joinRoom(hostPeerId);

@@ -22,13 +22,7 @@ export const GameTable: React.FC<GameTableProps> = ({
   isRevolution,
   lockedSuits,
 }) => {
-  let revText = '革命中';
-  try {
-    const { t } = useTranslation();
-    revText = t.table.revolution;
-  } catch {
-    // fallback for isolated tests
-  }
+  const { t } = useTranslation();
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full max-w-lg h-56 sm:h-64 rounded-2xl bg-emerald-900/60 border-2 border-emerald-700/50 shadow-inner p-4 my-2">
@@ -38,7 +32,7 @@ export const GameTable: React.FC<GameTableProps> = ({
           data-testid="revolution-badge"
           className="absolute top-2 left-3 px-3 py-1 bg-red-600 border border-red-300 text-white font-extrabold text-xs tracking-wider rounded-md uppercase shadow-md"
         >
-          {revText}
+          {t.table.revolution}
         </div>
       )}
 
@@ -48,7 +42,7 @@ export const GameTable: React.FC<GameTableProps> = ({
           data-testid="suit-lock-badge"
           className="absolute top-2 right-3 px-3 py-1 bg-blue-600 text-white font-bold text-xs rounded-md shadow-md flex items-center space-x-1"
         >
-          <span>縛り:</span>
+          <span>{t.table.suitLock}</span>
           <span>{lockedSuits.map((s) => SUIT_SYMBOLS[s]).join(' ')}</span>
         </div>
       )}
@@ -67,7 +61,7 @@ export const GameTable: React.FC<GameTableProps> = ({
           data-testid="table-placeholder"
           className="text-emerald-300/60 font-semibold text-sm tracking-wide animate-in fade-in duration-200"
         >
-          場が流れています
+          {t.table.tableCleared}
         </div>
       )}
     </div>

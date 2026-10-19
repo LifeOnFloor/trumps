@@ -2,6 +2,7 @@ import React from 'react';
 import type { Card } from '../../core/types/card.js';
 import { CardView } from './CardView.js';
 import { playTapSound } from '../utils/sound.js';
+import { useTranslation } from '../../i18n/context.js';
 
 export interface PlayerHandProps {
   cards: readonly Card[];
@@ -18,6 +19,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
   disabled = false,
   chips,
 }) => {
+  const { t } = useTranslation();
   const selectedSet = new Set(selectedCardIds);
 
   // Sort hand: Jokers last, then rank (3 -> 13 -> 1 -> 2)
@@ -51,7 +53,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
                     : 'bg-emerald-950/90 text-yellow-400 border-yellow-500/50'
                 }`}
               >
-                <span>{chips < 0 ? '🔴 借金' : '🪙'}</span>
+                <span>{chips < 0 ? `🔴 ${t.table.debt}` : '🪙'}</span>
                 <span>{chips.toLocaleString()}</span>
               </div>
             )}
@@ -59,7 +61,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
 
           {selectedCardIds.length > 0 && (
             <span className="font-extrabold text-yellow-300 bg-emerald-900 px-2.5 py-0.5 rounded-full border border-yellow-400/80 shadow-md">
-              {selectedCardIds.length}枚選択中
+              {selectedCardIds.length} {t.table.selectedCount}
             </span>
           )}
         </div>

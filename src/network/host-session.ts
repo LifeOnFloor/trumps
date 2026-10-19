@@ -255,7 +255,16 @@ export class HostSession {
     // Check duplicate
     const existing = this.players.find((p) => p.id === playerId || p.peerId === peerId);
     if (!existing) {
-      this.players.push({ id: playerId, name: playerName, peerId });
+      let assignedName = playerName.trim();
+      const isDefaultNumbered = /^#\d*$/.test(assignedName);
+      const isGenericDefault = !assignedName || assignedName === 'プレイヤー' || assignedName === 'Player';
+      const isDuplicate = this.players.some((p) => p.name === assignedName);
+
+      if (isGenericDefault || isDefaultNumbered || isDuplicate) {
+        assignedName = `#${this.players.length + 1}`;
+      }
+
+      this.players.push({ id: playerId, name: assignedName, peerId });
     }
 
     this.notifyPlayersChange();

@@ -28,7 +28,7 @@ describe('I18n Localization', () => {
     expect(screen.getByTestId('play-text')).toHaveTextContent('出す');
   });
 
-  it('言語セレクターでEnglishをクリックすると英語に切り替わること', () => {
+  it('言語セレクターでEnglishを選択すると英語に切り替わること', () => {
     render(
       <I18nProvider>
         <TestConsumer />
@@ -36,12 +36,13 @@ describe('I18n Localization', () => {
       </I18nProvider>
     );
 
-    fireEvent.click(screen.getByTestId('lang-en'));
+    const select = screen.getByTestId('language-select');
+    fireEvent.change(select, { target: { value: 'en' } });
     expect(screen.getByTestId('current-lang')).toHaveTextContent('en');
     expect(screen.getByTestId('play-text')).toHaveTextContent('Play');
 
     // Switch back to ja
-    fireEvent.click(screen.getByTestId('lang-ja'));
+    fireEvent.change(select, { target: { value: 'ja' } });
     expect(screen.getByTestId('current-lang')).toHaveTextContent('ja');
     expect(screen.getByTestId('play-text')).toHaveTextContent('出す');
   });

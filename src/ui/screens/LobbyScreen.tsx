@@ -37,11 +37,19 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onStartGame,
   onLeaveRoom,
 }) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [mode, setMode] = useState<'select' | 'host' | 'client'>('select');
   const [chipSubMode, setChipSubMode] = useState<'preset' | 'custom'>('preset');
   const [selectedGameId, setSelectedGameId] = useState('daifugo');
-  const [playerName, setPlayerName] = useState('プレイヤー');
+  const [playerName, setPlayerName] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('room') || params.get('r')) {
+        return '#2';
+      }
+    }
+    return '#1';
+  });
   const [targetPeerId, setTargetPeerId] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
@@ -226,9 +234,9 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   onLeaveRoom();
                 }}
                 className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600/60 text-xs font-black transition active:scale-95 shadow-sm"
+                aria-label={t.settings.leaveRoom}
               >
                 <span>🚪</span>
-                <span>退出</span>
               </button>
             )}
           </div>
@@ -281,7 +289,12 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
               <button
                 type="button"
-                onClick={() => setMode('client')}
+                onClick={() => {
+                  setMode('client');
+                  if (playerName === '#1') {
+                    setPlayerName('#2');
+                  }
+                }}
                 className="py-3.5 px-4 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-black text-sm shadow-md border border-emerald-600/60 transition active:scale-95 flex items-center justify-center space-x-1.5"
               >
                 <span>🚪</span>
@@ -349,7 +362,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs text-emerald-400 font-bold transition-transform duration-200">
-                    {config.chipsMode ? '▲ 閉じる' : '▼ 設定する'}
+                    {config.chipsMode ? '▲' : '▼'}
                   </span>
                   <label
                     className="relative inline-flex items-center cursor-pointer pointer-events-none"
@@ -468,7 +481,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                                 : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
                             }`}
                           >
-                            なし (0枚)
+                            {language === 'en' ? 'None (0)' : 'なし (0枚)'}
                           </button>
                           <button
                             type="button"
@@ -479,7 +492,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                                 : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
                             }`}
                           >
-                            固定 (50枚)
+                            {language === 'en' ? 'Fixed (50)' : '固定 (50枚)'}
                           </button>
                           <button
                             type="button"
@@ -490,14 +503,16 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                                 : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
                             }`}
                           >
-                            漸増 (+50/回)
+                            {language === 'en' ? 'Escalating (+50/R)' : '漸増 (+50/回)'}
                           </button>
                         </div>
                       </div>
 
                       {/* Bankruptcy Rule: Debt vs Bust */}
                       <div className="space-y-1">
-                        <div className="text-[11px] font-bold text-emerald-300">破産・借金ルール (所持チップ0時)</div>
+                        <div className="text-[11px] font-bold text-emerald-300">
+                          {language === 'en' ? 'Bankruptcy Rule (Chips ≤ 0)' : '破産・借金ルール (所持チップ0時)'}
+                        </div>
                         <div className="grid grid-cols-2 gap-1.5">
                           <button
                             type="button"
@@ -508,7 +523,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                                 : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
                             }`}
                           >
-                            🀄 借金OK (麻雀黒棒)
+                            {language === 'en' ? '🀄 Allow Debt' : '🀄 借金OK (麻雀黒棒)'}
                           </button>
                           <button
                             type="button"
@@ -519,7 +534,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                                 : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60'
                             }`}
                           >
-                            💥 破産脱落 (Bust)
+                            {language === 'en' ? '💥 Bust (Game Over)' : '💥 破産脱落 (Bust)'}
                           </button>
                         </div>
                       </div>
@@ -565,12 +580,16 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             <div className="p-3.5 rounded-2xl bg-emerald-950/70 border border-emerald-800/80 text-xs space-y-3.5 shadow-md">
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-xs text-yellow-300">{t.lobby.ruleDetails}</span>
-                <span className="text-[10px] text-emerald-400">クリックで個別切替・排他自動解決</span>
+                <span className="text-[10px] text-emerald-400">
+                  {language === 'en' ? 'Click to toggle rules' : 'クリックで個別切替・排他自動解決'}
+                </span>
               </div>
 
               {/* Exclusive 1: Suit Lock */}
               <div className="space-y-1">
-                <div className="text-[11px] font-bold text-emerald-300">{t.rules.suitLockTitle}（単一選択）</div>
+                <div className="text-[11px] font-bold text-emerald-300">
+                  {t.rules.suitLockTitle} ({language === 'en' ? 'Single Choice' : '単一選択'})
+                </div>
                 <div className="grid grid-cols-4 gap-1.5">
                   {(['none', 'single', 'double', 'geki'] as const).map((modeKey) => (
                     <button
@@ -583,10 +602,10 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                           : 'bg-emerald-900/50 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
                       }`}
                     >
-                      {modeKey === 'none' && 'なし'}
-                      {modeKey === 'single' && '片縛り'}
-                      {modeKey === 'double' && '両縛り'}
-                      {modeKey === 'geki' && '激縛り'}
+                      {modeKey === 'none' && (language === 'en' ? 'None' : 'なし')}
+                      {modeKey === 'single' && (language === 'en' ? 'Single' : '片縛り')}
+                      {modeKey === 'double' && (language === 'en' ? 'Double' : '両縛り')}
+                      {modeKey === 'geki' && (language === 'en' ? 'Super' : '激縛り')}
                     </button>
                   ))}
                 </div>
@@ -594,7 +613,9 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
               {/* Exclusive 2: 9 Effect */}
               <div className="space-y-1">
-                <div className="text-[11px] font-bold text-emerald-300">{t.rules.nineEffectTitle}（単一選択）</div>
+                <div className="text-[11px] font-bold text-emerald-300">
+                  {t.rules.nineEffectTitle} ({language === 'en' ? 'Single Choice' : '単一選択'})
+                </div>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(['none', 'reverse', 'revolution'] as const).map((modeKey) => (
                     <button
@@ -607,9 +628,9 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                           : 'bg-emerald-900/50 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
                       }`}
                     >
-                      {modeKey === 'none' && 'なし'}
-                      {modeKey === 'reverse' && '9リバース'}
-                      {modeKey === 'revolution' && '9一時革命'}
+                      {modeKey === 'none' && (language === 'en' ? 'None' : 'なし')}
+                      {modeKey === 'reverse' && (language === 'en' ? '9-Reverse' : '9リバース')}
+                      {modeKey === 'revolution' && (language === 'en' ? '9-Revolution' : '9一時革命')}
                     </button>
                   ))}
                 </div>
@@ -738,110 +759,99 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   <span>⚙️</span>
                   <span>{t.lobby.roomRules}</span>
                 </span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">
-                  {config.chipsMode ? '💰 チップ対戦' : '通常対戦'}
-                </span>
+                {config.chipsMode && (config.baseAnte ?? config.ante ?? 0) > 0 && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold">
+                    🪙 {config.baseAnte ?? config.ante}
+                  </span>
+                )}
               </div>
 
               {/* Special rules badges */}
               <div className="flex flex-wrap gap-1.5 pt-1">
-                {/* Chips details badges */}
+                {/* Minimal Chips details (ante and pot only) */}
                 {config.chipsMode && (
                   <>
-                    {config.preset && config.preset !== 'custom' && (
-                      <span className="px-2 py-0.5 rounded-lg bg-yellow-400 text-gray-950 font-black text-[11px]">
-                        {CHIP_PRESETS[config.preset]?.icon} {CHIP_PRESETS[config.preset]?.title}
+                    {(config.baseAnte ?? config.ante ?? 0) > 0 && (
+                      <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
+                        🪙 {config.anteType === 'escalating' ? `+${config.escalationStep ?? 50}/R` : `${config.baseAnte ?? config.ante}`}
                       </span>
                     )}
-                    <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
-                      初期: {(config.initialChips ?? 1000).toLocaleString()}枚
-                    </span>
-                    {config.anteType === 'escalating' ? (
+                    {config.chipSettlementType === 'pot_split' && (
                       <span className="px-2 py-0.5 rounded-lg bg-amber-500/25 text-amber-300 border border-amber-400/50 font-bold text-[11px]">
-                        漸増アンティ (+{config.escalationStep ?? 50}/回)
+                        🏺 Pot
                       </span>
-                    ) : (config.baseAnte ?? config.ante ?? 0) > 0 ? (
-                      <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
-                        アンティ: {config.baseAnte ?? config.ante}枚
-                      </span>
-                    ) : null}
-                    <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
-                      {config.bankruptcyRule === 'bust_game_over' ? '💥 破産脱落' : '🀄 借金OK'}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
-                      {config.chipSettlementType === 'pot_split' ? 'ポット配分' : '順位間移動'}
-                    </span>
+                    )}
                   </>
                 )}
                 {/* Suit Lock Badge */}
                 {config.suitLock !== 'none' && (
                   <span className="px-2 py-0.5 rounded-lg bg-yellow-400 text-gray-950 font-black text-[11px]">
-                    {config.suitLock === 'single' && '片縛り'}
-                    {config.suitLock === 'double' && '両縛り'}
-                    {config.suitLock === 'geki' && '激縛り'}
+                    {config.suitLock === 'single' && (language === 'en' ? 'Single Lock' : '片縛り')}
+                    {config.suitLock === 'double' && (language === 'en' ? 'Double Lock' : '両縛り')}
+                    {config.suitLock === 'geki' && (language === 'en' ? 'Super Lock' : '激縛り')}
                   </span>
                 )}
                 {/* 9 Effect Badge */}
                 {config.nineEffect !== 'none' && (
                   <span className="px-2 py-0.5 rounded-lg bg-yellow-400 text-gray-950 font-black text-[11px]">
-                    {config.nineEffect === 'reverse' && '9リバース'}
-                    {config.nineEffect === 'revolution' && '9一時革命'}
+                    {config.nineEffect === 'reverse' && (language === 'en' ? '9-Reverse' : '9リバース')}
+                    {config.nineEffect === 'revolution' && (language === 'en' ? '9-Revolution' : '9一時革命')}
                   </span>
                 )}
                 {/* Other Active Rules */}
                 {config.eightCut && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    8切り
+                    {t.rules.eightCutTitle}
                   </span>
                 )}
                 {config.revolution && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    革命
+                    {t.rules.revolutionTitle}
                   </span>
                 )}
                 {config.elevenBack && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    11バック
+                    {t.rules.elevenBackTitle}
                   </span>
                 )}
                 {config.miyakoOchi && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    都落ち
+                    {t.rules.miyakoOchiTitle}
                   </span>
                 )}
                 {config.spadeThreeReturn && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    スペ3返し
+                    {t.rules.spadeThreeTitle}
                   </span>
                 )}
                 {config.stairs && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    階段
+                    {t.rules.stairsTitle}
                   </span>
                 )}
                 {config.fiveSkip && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    5スキップ
+                    {t.rules.fiveSkipTitle}
                   </span>
                 )}
                 {config.sevenPass && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    7渡し
+                    {t.rules.sevenPassTitle}
                   </span>
                 )}
                 {config.tenDiscard && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    10捨て
+                    {t.rules.tenDiscardTitle}
                   </span>
                 )}
                 {config.sandstorm && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    砂嵐
+                    {t.rules.sandstormTitle}
                   </span>
                 )}
                 {config.gekokujo && (
                   <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
-                    下剋上
+                    {t.rules.gekokujoTitle}
                   </span>
                 )}
               </div>
@@ -852,7 +862,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   onClick={() => setIsRulesModalOpen(true)}
                   className="text-[11px] text-yellow-400 hover:text-yellow-300 font-extrabold underline"
                 >
-                  📋 全ルール詳細を確認
+                  📋 {t.settings.checkRules}
                 </button>
               </div>
             </div>
@@ -882,7 +892,11 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               onClick={() => onJoinClient(targetPeerId.trim(), playerName)}
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isConnecting ? '接続中...' : t.lobby.enterRoom}
+              {isConnecting
+                ? language === 'en'
+                  ? 'Connecting...'
+                  : '接続中...'
+                : t.lobby.enterRoom}
             </button>
 
             <button

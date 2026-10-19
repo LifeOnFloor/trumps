@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SanitizedPlayerState } from '../../core/types/engine.js';
+import { useTranslation } from '../../i18n/context.js';
 
 export interface ResultModalProps {
   rankings: readonly string[];
@@ -9,8 +10,6 @@ export interface ResultModalProps {
   onRestart?: () => void;
 }
 
-const RANK_TITLES = ['大富豪', '富豪', '平民', '貧民', '大貧民'];
-
 export const ResultModal: React.FC<ResultModalProps> = ({
   rankings,
   players,
@@ -18,7 +17,16 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   onNextRound,
   onRestart,
 }) => {
+  const { t, language } = useTranslation();
   const playerMap = new Map(players.map((p) => [p.id, p]));
+
+  const rankTitles = [
+    t.results.ranks.daifugo,
+    t.results.ranks.fugo,
+    t.results.ranks.heimin,
+    t.results.ranks.hinmin,
+    t.results.ranks.daihinmin,
+  ];
 
   return (
     <div
@@ -28,13 +36,13 @@ export const ResultModal: React.FC<ResultModalProps> = ({
       <div className="bg-emerald-950/95 border border-yellow-500/50 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
         <div className="text-3xl mb-1">🏆</div>
         <h2 className="text-2xl font-black text-yellow-400 mb-4 tracking-wider">
-          GAME OVER
+          {t.results.gameOver}
         </h2>
 
         <div className="space-y-2 mb-6">
           {rankings.map((playerId, idx) => {
             const player = playerMap.get(playerId);
-            const title = RANK_TITLES[idx] ?? `${idx + 1}位`;
+            const title = rankTitles[idx] ?? (language === 'en' ? `#${idx + 1}` : `${idx + 1}位`);
             return (
               <div
                 key={playerId}
@@ -51,7 +59,7 @@ export const ResultModal: React.FC<ResultModalProps> = ({
                   <div className={`flex items-center space-x-1 font-black text-xs ${
                     player.chips < 0 ? 'text-red-400 font-bold' : 'text-yellow-400'
                   }`}>
-                    <span>{player.chips < 0 ? '🔴 借金' : '🪙'}</span>
+                    <span>{player.chips < 0 ? `🔴 ${t.table.debt}` : '🪙'}</span>
                     <span>{player.chips.toLocaleString()}</span>
                   </div>
                 )}
@@ -69,14 +77,14 @@ export const ResultModal: React.FC<ResultModalProps> = ({
                 onClick={onNextRound}
                 className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black shadow-lg shadow-yellow-500/30 transition active:scale-95 text-sm"
               >
-                👑 次のゲーム（再戦）を開始
+                👑 {t.results.startNextGame}
               </button>
             ) : (
               <div
                 data-testid="waiting-next-round"
                 className="text-xs text-yellow-300 font-bold bg-emerald-900/80 p-3 rounded-2xl border border-emerald-700/60"
               >
-                ホストが次のゲームを開始するのを待っています...
+                {t.results.waitingForHost}
               </div>
             )
           )}
@@ -88,7 +96,7 @@ export const ResultModal: React.FC<ResultModalProps> = ({
               onClick={onRestart}
               className="w-full py-2.5 rounded-2xl bg-emerald-900/70 hover:bg-emerald-800 text-emerald-200 text-xs font-bold transition active:scale-95"
             >
-              ロビーへ戻る
+              {t.results.backToLobby}
             </button>
           )}
         </div>

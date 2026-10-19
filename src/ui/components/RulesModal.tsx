@@ -13,7 +13,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
   config,
   onClose,
 }) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   if (!isOpen) return null;
 
   const categories = [
@@ -35,17 +35,25 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         {
           name: `${t.rules.nineEffectTitle}${
             config.nineEffect === 'reverse'
-              ? '（9リバース）'
+              ? language === 'en'
+                ? ' (Reverse)'
+                : '（9リバース）'
               : config.nineEffect === 'revolution'
-              ? '（9一時革命）'
+              ? language === 'en'
+                ? ' (Revolution)'
+                : '（9一時革命）'
               : ''
           }`,
           enabled: config.nineEffect !== 'none',
           desc: `${t.rules.nineEffectDesc} [${
             config.nineEffect === 'reverse'
-              ? '9リバース'
+              ? language === 'en'
+                ? '9-Reverse'
+                : '9リバース'
               : config.nineEffect === 'revolution'
-              ? '9一時革命'
+              ? language === 'en'
+                ? '9-Revolution'
+                : '9一時革命'
               : 'OFF'
           }]`,
         },
@@ -57,21 +65,33 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         {
           name: `${t.rules.suitLockTitle}${
             config.suitLock === 'single'
-              ? '（片縛り）'
+              ? language === 'en'
+                ? ' (Single Lock)'
+                : '（片縛り）'
               : config.suitLock === 'double'
-              ? '（両縛り）'
+              ? language === 'en'
+                ? ' (Double Lock)'
+                : '（両縛り）'
               : config.suitLock === 'geki'
-              ? '（激縛り）'
+              ? language === 'en'
+                ? ' (Super Lock)'
+                : '（激縛り）'
               : ''
           }`,
           enabled: config.suitLock !== 'none',
           desc: `${t.rules.suitLockDesc} [${
             config.suitLock === 'single'
-              ? '片縛り'
+              ? language === 'en'
+                ? 'Single Lock'
+                : '片縛り'
               : config.suitLock === 'double'
-              ? '両縛り'
+              ? language === 'en'
+                ? 'Double Lock'
+                : '両縛り'
               : config.suitLock === 'geki'
-              ? '激縛り'
+              ? language === 'en'
+                ? 'Super Lock'
+                : '激縛り'
               : 'OFF'
           }]`,
         },
@@ -102,7 +122,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         {
           name: t.rules.chipsTitle,
           enabled: !!config.chipsMode,
-          desc: `${t.rules.chipsDesc} (${(config.initialChips ?? 1000).toLocaleString()}枚 / アンティ: ${config.ante ?? 0}枚 / ${config.chipSettlementType === 'pot_split' ? 'ポット配分' : '順位間移動'})`,
+          desc:
+            (config.baseAnte ?? config.ante ?? 0) > 0
+              ? `🪙 ${language === 'en' ? 'Ante' : 'アンティ'}: ${config.baseAnte ?? config.ante}${
+                  config.chipSettlementType === 'pot_split' ? ' / 🏺 Pot' : ''
+                }`
+              : t.rules.chipsDesc,
         },
       ],
     },

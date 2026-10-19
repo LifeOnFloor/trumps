@@ -30,19 +30,13 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
   onPassCards,
   onDiscardCards,
 }) => {
-  let playLabel = '出す';
-  let passLabel = 'パス';
-  try {
-    const { t } = useTranslation();
-    playLabel = t.table.play;
-    passLabel = t.table.pass;
-  } catch {
-    // Fallback if rendered outside I18nProvider in isolated unit tests
-  }
+  const { t, language } = useTranslation();
 
   if (pendingHandAction && isMyTurn) {
     if (pendingHandAction.type === 'SEVEN_PASS') {
       const isPassValid = selectedCardsCount === pendingHandAction.count;
+      const targetName = pendingHandAction.targetPlayerName ?? (language === 'en' ? 'opponent' : '相手');
+      const giveLabel = t.table.giveCards.replace('{name}', targetName);
       return (
         <div className="flex flex-col items-center justify-center space-y-1 my-2">
           <button
@@ -56,7 +50,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 : 'bg-emerald-500 hover:bg-emerald-400 text-white active:scale-95 ring-2 ring-emerald-300'
             }`}
           >
-            {pendingHandAction.targetPlayerName ?? '相手'} に渡す ({selectedCardsCount}/{pendingHandAction.count}枚)
+            {giveLabel} ({selectedCardsCount}/{pendingHandAction.count})
           </button>
         </div>
       );
@@ -77,7 +71,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
                 : 'bg-rose-500 hover:bg-rose-400 text-white active:scale-95 ring-2 ring-rose-300'
             }`}
           >
-            手札を捨てる ({selectedCardsCount}/{pendingHandAction.count}枚)
+            {t.table.discardCards} ({selectedCardsCount}/{pendingHandAction.count})
           </button>
         </div>
       );
@@ -101,7 +95,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               : 'bg-yellow-500 hover:bg-yellow-400 text-gray-900 active:scale-95 ring-2 ring-yellow-300'
           }`}
         >
-          {playLabel}
+          {t.table.play}
         </button>
 
         <button
@@ -115,7 +109,7 @@ export const ActionPanel: React.FC<ActionPanelProps> = ({
               : 'bg-gray-600 hover:bg-gray-500 text-white active:scale-95'
           }`}
         >
-          {passLabel}
+          {t.table.pass}
         </button>
       </div>
 

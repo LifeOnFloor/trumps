@@ -1,5 +1,6 @@
 import React from 'react';
 import type { SanitizedPlayerState } from '../../core/types/engine.js';
+import { useTranslation } from '../../i18n/context.js';
 
 export interface OpponentSeatProps {
   player: SanitizedPlayerState;
@@ -12,6 +13,8 @@ export const OpponentSeat: React.FC<OpponentSeatProps> = ({
   isCurrentTurn,
   isDisconnected = false,
 }) => {
+  const { t, language } = useTranslation();
+
   return (
     <div
       data-testid={`opponent-${player.id}`}
@@ -28,7 +31,7 @@ export const OpponentSeat: React.FC<OpponentSeatProps> = ({
           data-testid={`disconnected-badge-${player.id}`}
           className="absolute -top-2 px-1.5 py-0.5 rounded-full bg-red-600 text-white font-black text-[9px] shadow-md border border-red-400"
         >
-          切断
+          {t.table.disconnected}
         </span>
       )}
 
@@ -38,7 +41,11 @@ export const OpponentSeat: React.FC<OpponentSeatProps> = ({
         </span>
         {player.isFinished && (
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-yellow-400 text-gray-950 font-black shadow-sm">
-            {player.rankPosition ? `${player.rankPosition}位` : 'Finish'}
+            {player.rankPosition
+              ? language === 'en'
+                ? `#${player.rankPosition}`
+                : `${player.rankPosition}位`
+              : 'Finish'}
           </span>
         )}
       </div>
@@ -62,7 +69,7 @@ export const OpponentSeat: React.FC<OpponentSeatProps> = ({
                 : 'bg-emerald-950/80 text-yellow-400 border-yellow-500/40'
             }`}
           >
-            <span>{player.chips < 0 ? '🔴 借金' : '🪙'}</span>
+            <span>{player.chips < 0 ? `🔴 ${t.table.debt}` : '🪙'}</span>
             <span>{player.chips.toLocaleString()}</span>
           </div>
         )}

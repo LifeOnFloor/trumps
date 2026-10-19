@@ -64,6 +64,9 @@ export interface TranslationDictionary {
     waitingTurn: string;
     play: string;
     pass: string;
+    giveCards: string;
+    discardCards: string;
+    debt: string;
     tableCleared: string;
     revolution: string;
     suitLock: string;
@@ -81,6 +84,14 @@ export interface TranslationDictionary {
       suitLocked: string;
       sequenceLocked: string;
     };
+  };
+  settings: {
+    title: string;
+    sound: string;
+    language: string;
+    checkRules: string;
+    leaveRoom: string;
+    close: string;
   };
   rules: {
     title: string;
@@ -138,6 +149,9 @@ export interface TranslationDictionary {
   results: {
     gameOver: string;
     playAgain: string;
+    startNextGame: string;
+    waitingForHost: string;
+    backToLobby: string;
     ranks: {
       daifugo: string;
       fugo: string;
