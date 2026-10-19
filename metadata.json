@@ -1,0 +1,8 @@
+{
+  "name": "Trumps - 大富豪 P2P",
+  "description": "Peer-to-peer multiplayer Daifugo (Japanese card game) built with React and PeerJS",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
