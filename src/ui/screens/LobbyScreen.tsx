@@ -267,29 +267,54 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             </div>
 
             {/* Chips Mode Toggle & Rich Settings */}
-            <div className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">💰</span>
+            <div className={`p-3.5 rounded-2xl border transition-all ${
+              config.chipsMode
+                ? 'bg-emerald-950/90 border-yellow-500/50 shadow-lg'
+                : 'bg-emerald-950/60 border-emerald-800'
+            } space-y-3`}>
+              <div
+                data-testid="chips-mode-row"
+                className="flex items-center justify-between cursor-pointer select-none"
+                onClick={() => toggleConfig('chipsMode')}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-2xl">💰</span>
                   <div>
-                    <div className="font-black text-xs text-yellow-300">{t.lobby.chipsMode}</div>
+                    <div className="flex items-center space-x-1.5">
+                      <span className="font-black text-xs text-yellow-300">{t.lobby.chipsMode}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        config.chipsMode ? 'bg-yellow-400 text-gray-950' : 'bg-emerald-900 text-emerald-400'
+                      }`}>
+                        {config.chipsMode ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
                     <div className="text-[11px] text-emerald-400">{t.lobby.chipsModeDesc}</div>
                   </div>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    data-testid="chips-mode-toggle"
-                    checked={!!config.chipsMode}
-                    onChange={() => toggleConfig('chipsMode')}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-emerald-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-                </label>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-emerald-400 font-bold transition-transform duration-200">
+                    {config.chipsMode ? '▲ 閉じる' : '▼ 設定する'}
+                  </span>
+                  <label
+                    className="relative inline-flex items-center cursor-pointer pointer-events-none"
+                  >
+                    <input
+                      type="checkbox"
+                      data-testid="chips-mode-toggle"
+                      checked={!!config.chipsMode}
+                      readOnly
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-emerald-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                  </label>
+                </div>
               </div>
 
               {config.chipsMode && (
-                <div className="pt-2 border-t border-emerald-800/80 space-y-2.5 text-xs animate-in fade-in duration-200">
+                <div
+                  className="pt-2.5 border-t border-emerald-800/80 space-y-2.5 text-xs animate-in fade-in duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {/* Starting Chips */}
                   <div className="space-y-1">
                     <div className="text-[11px] font-bold text-emerald-300">{t.lobby.initialChipsLabel}</div>

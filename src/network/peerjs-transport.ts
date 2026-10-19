@@ -36,12 +36,59 @@ export class PeerJsTransport implements ITransport {
     }
 
     return new Promise((resolve, reject) => {
+      let isSettled = false;
       const conn = this.peer.connect(targetPeerId);
+
+      const peerErrorHandler = (err: any) => {
+        if (isSettled) return;
+        const errMsg = String(err?.message || '');
+        if (err?.type === 'peer-unavailable' || errMsg.includes(targetPeerId)) {
+          isSettled = true;
+          cleanup();
+          try {
+            conn.close();
+          } catch {
+            // ignore
+          }
+          reject(new Error(`指定されたルーム（ホスト: ${targetPeerId}）が見つかりません。IDや招待URLを確認してください。`));
+        }
+      };
+
+      const cleanup = () => {
+        if (timer) clearTimeout(timer);
+        if (typeof (this.peer as any).off === 'function') {
+          (this.peer as any).off('error', peerErrorHandler);
+        } else if (typeof (this.peer as any).removeListener === 'function') {
+          (this.peer as any).removeListener('error', peerErrorHandler);
+        }
+      };
+
+      const timer = setTimeout(() => {
+        if (isSettled) return;
+        isSettled = true;
+        cleanup();
+        try {
+          conn.close();
+        } catch {
+          // ignore
+        }
+        reject(new Error('ルームへの接続がタイムアウトしました。ホストが起動しているか確認してください。'));
+      }, 5000);
+
+      this.peer.on('error', peerErrorHandler);
+
       conn.on('open', () => {
+        if (isSettled) return;
+        isSettled = true;
+        cleanup();
         this.trackConnection(conn);
         resolve();
       });
+
       conn.on('error', (err) => {
+        if (isSettled) return;
+        isSettled = true;
+        cleanup();
         reject(err);
       });
     });

@@ -31,27 +31,17 @@ describe('Chips Settings UI and Badges', () => {
     // Click "部屋を作る (Host)" to enter host mode
     fireEvent.click(screen.getByText(/部屋を作る \(Host\)/));
 
-    // Initial chips selection should not be visible when chipsMode is false
+    // Initially when chipsMode is false, rich settings are not displayed
     expect(screen.queryByText('初期チップ')).toBeNull();
 
-    // Rerender with chipsMode: true
-    rerender(
-      <I18nProvider>
-        <LobbyScreen
-          isHost={true}
-          peerId="host_1"
-          players={[{ id: 'host_1', name: 'Host' }]}
-          error={null}
-          roomConfig={{ ...DEFAULT_DAIFUGO_CONFIG, chipsMode: true, initialChips: 1000, ante: 50 }}
-          onUpdateConfig={onUpdateConfig}
-          onStartHost={vi.fn()}
-          onJoinClient={vi.fn()}
-          onStartGame={vi.fn()}
-        />
-      </I18nProvider>
+    // Clicking the entire chips-mode-row toggles chipsMode to true and immediately expands settings!
+    const chipsRow = screen.getByTestId('chips-mode-row');
+    fireEvent.click(chipsRow);
+    expect(onUpdateConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ chipsMode: true })
     );
 
-    // Now rich options should be visible
+    // Now rich options should be visible immediately
     expect(screen.getByText('初期チップ')).toBeDefined();
     expect(screen.getByText('アンティ (参加費)')).toBeDefined();
     expect(screen.getByText('精算方式')).toBeDefined();
