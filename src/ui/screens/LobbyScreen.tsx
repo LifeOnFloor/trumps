@@ -107,6 +107,18 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
     updateAndNotifyConfig({ ...config, nineEffect });
   };
 
+  const setInitialChips = (initialChips: number) => {
+    updateAndNotifyConfig({ ...config, initialChips });
+  };
+
+  const setAnte = (ante: number) => {
+    updateAndNotifyConfig({ ...config, ante });
+  };
+
+  const setChipSettlementType = (chipSettlementType: 'ranking_transfer' | 'pot_split') => {
+    updateAndNotifyConfig({ ...config, chipSettlementType });
+  };
+
   const handleApplyPreset = (configPartial: Partial<DaifugoConfig>) => {
     const updated: DaifugoConfig = {
       ...config,
@@ -254,25 +266,102 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               </div>
             </div>
 
-            {/* Chips Mode Toggle */}
-            <div className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-800 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <span className="text-xl">💰</span>
-                <div>
-                  <div className="font-black text-xs text-yellow-300">{t.lobby.chipsMode}</div>
-                  <div className="text-[11px] text-emerald-400">{t.lobby.chipsModeDesc}</div>
+            {/* Chips Mode Toggle & Rich Settings */}
+            <div className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">💰</span>
+                  <div>
+                    <div className="font-black text-xs text-yellow-300">{t.lobby.chipsMode}</div>
+                    <div className="text-[11px] text-emerald-400">{t.lobby.chipsModeDesc}</div>
+                  </div>
                 </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    data-testid="chips-mode-toggle"
+                    checked={!!config.chipsMode}
+                    onChange={() => toggleConfig('chipsMode')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-emerald-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                </label>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  data-testid="chips-mode-toggle"
-                  checked={!!config.chipsMode}
-                  onChange={() => toggleConfig('chipsMode')}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-emerald-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-              </label>
+
+              {config.chipsMode && (
+                <div className="pt-2 border-t border-emerald-800/80 space-y-2.5 text-xs animate-in fade-in duration-200">
+                  {/* Starting Chips */}
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-bold text-emerald-300">{t.lobby.initialChipsLabel}</div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[500, 1000, 5000].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setInitialChips(val)}
+                          className={`py-1 rounded-lg font-bold text-[11px] border transition-all ${
+                            (config.initialChips ?? 1000) === val
+                              ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                              : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
+                          }`}
+                        >
+                          {val.toLocaleString()}枚
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Ante */}
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-bold text-emerald-300">{t.lobby.anteLabel}</div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[0, 50, 100, 200].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setAnte(val)}
+                          className={`py-1 rounded-lg font-bold text-[11px] border transition-all ${
+                            (config.ante ?? 0) === val
+                              ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                              : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
+                          }`}
+                        >
+                          {val === 0 ? 'なし' : `${val}枚`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Settlement Type */}
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-bold text-emerald-300">{t.lobby.settlementTypeLabel}</div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setChipSettlementType('ranking_transfer')}
+                        className={`py-1 px-1.5 rounded-lg font-bold text-[11px] border transition-all ${
+                          (config.chipSettlementType ?? 'ranking_transfer') === 'ranking_transfer'
+                            ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                            : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
+                        }`}
+                      >
+                        {t.lobby.settlementRanking}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChipSettlementType('pot_split')}
+                        className={`py-1 px-1.5 rounded-lg font-bold text-[11px] border transition-all ${
+                          config.chipSettlementType === 'pot_split'
+                            ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                            : 'bg-emerald-900/60 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
+                        }`}
+                      >
+                        {t.lobby.settlementPotSplit}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Rule Presets */}
@@ -462,6 +551,22 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
               {/* Special rules badges */}
               <div className="flex flex-wrap gap-1.5 pt-1">
+                {/* Chips details badges */}
+                {config.chipsMode && (
+                  <>
+                    <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
+                      初期: {(config.initialChips ?? 1000).toLocaleString()}枚
+                    </span>
+                    {(config.ante ?? 0) > 0 && (
+                      <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
+                        アンティ: {config.ante}枚
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-bold text-[11px]">
+                      {config.chipSettlementType === 'pot_split' ? 'ポット配分' : '順位間移動'}
+                    </span>
+                  </>
+                )}
                 {/* Suit Lock Badge */}
                 {config.suitLock !== 'none' && (
                   <span className="px-2 py-0.5 rounded-lg bg-yellow-400 text-gray-950 font-black text-[11px]">

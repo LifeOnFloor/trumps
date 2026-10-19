@@ -135,12 +135,23 @@ export const TableScreen: React.FC<TableScreenProps> = ({
             {t.app.title}
           </span>
           {activeConfig.chipsMode && (
-            <span
-              data-testid="chips-mode-badge"
-              className="text-[10px] px-2.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-black shadow-sm"
-            >
-              {t.table.chipsBadge}
-            </span>
+            <div className="flex items-center space-x-1.5">
+              <span
+                data-testid="chips-mode-badge"
+                className="text-[10px] px-2.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-black shadow-sm"
+              >
+                {t.table.chipsBadge}
+              </span>
+              {(ruleState.pot ?? 0) > 0 && (
+                <span
+                  data-testid="pot-badge"
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/50 font-black shadow-sm flex items-center space-x-1"
+                >
+                  <span>🏺 ポット:</span>
+                  <span>{(ruleState.pot ?? 0).toLocaleString()}</span>
+                </span>
+              )}
+            </div>
           )}
         </div>
 

@@ -12,6 +12,7 @@ import { createDeck, dealHands, shuffleDeck } from '../../utils/deck.js';
 import type { DaifugoConfig } from './config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from './config.js';
 import { executeTaxCardExchange } from './exchange.js';
+import { settleChips } from './settlement.js';
 import type { DaifugoAction, DaifugoRuleState, PendingHandAction, PlayMeld } from './types.js';
 import {
   checkSequenceLock,
@@ -40,7 +41,7 @@ export class DaifugoPlugin
   readonly defaultConfig: DaifugoConfig = DEFAULT_DAIFUGO_CONFIG;
 
   init(
-    players: readonly { id: string; name: string }[],
+    players: readonly { id: string; name: string; chips?: number }[],
     config?: Partial<DaifugoConfig>,
     options?: { previousRankings?: readonly string[] }
   ): { context: BaseGameContext; ruleState: DaifugoRuleState } {
@@ -66,8 +67,22 @@ export class DaifugoPlugin
       name: p.name,
       hand: hands[idx] ?? [],
       isFinished: false,
-      chips: mergedConfig.chipsMode ? (mergedConfig.initialChips ?? 1000) : undefined,
+      chips: mergedConfig.chipsMode ? (p.chips ?? mergedConfig.initialChips ?? 1000) : undefined,
     }));
+
+    let initialPot = 0;
+    if (mergedConfig.chipsMode && (mergedConfig.ante ?? 0) > 0) {
+      const anteAmount = mergedConfig.ante!;
+      initialPlayers = initialPlayers.map((p) => {
+        if (p.chips === undefined) return p;
+        const paid = Math.min(p.chips, anteAmount);
+        initialPot += paid;
+        return {
+          ...p,
+          chips: p.chips - paid,
+        };
+      });
+    }
 
     // If previousRankings exists and cardExchange is enabled, execute tax card exchange
     if (mergedConfig.cardExchange && options?.previousRankings && options.previousRankings.length > 0) {
@@ -114,6 +129,7 @@ export class DaifugoPlugin
       },
       rankings: [],
       foulPlayerIds: [],
+      pot: initialPot,
     };
 
     return { context, ruleState };
@@ -214,6 +230,7 @@ export class DaifugoPlugin
     let nextRankings = [...ruleState.rankings];
     let nextFoulPlayers = [...ruleState.foulPlayerIds];
     let nextTurnPlayerId: string | null = null;
+    let nextPot = ruleState.pot ?? 0;
 
     if (action.type === 'SURRENDER') {
       events.push({ type: 'PLAYER_SURRENDERED', payload: { playerId } });
@@ -590,25 +607,15 @@ export class DaifugoPlugin
 
       // Settle chips if chipsMode is enabled
       if (ruleState.config.chipsMode) {
-        const fullRankings = [...nextRankings, ...nextFoulPlayers];
-        const count = fullRankings.length;
-        nextPlayers = nextPlayers.map((p) => {
-          if (p.chips === undefined) return p;
-          let delta = 0;
-          if (nextFoulPlayers.includes(p.id)) {
-            delta = -300;
-          } else {
-            const rankIdx = nextRankings.indexOf(p.id);
-            if (rankIdx === 0) delta = 200;
-            else if (rankIdx === 1 && count >= 4) delta = 100;
-            else if (rankIdx === count - 2 && count >= 4) delta = -100;
-            else if (rankIdx === count - 1) delta = -200;
-          }
-          return {
-            ...p,
-            chips: Math.max(0, p.chips + delta),
-          };
+        const settlement = settleChips({
+          players: nextPlayers,
+          rankings: nextRankings,
+          foulPlayerIds: nextFoulPlayers,
+          pot: ruleState.pot,
+          config: ruleState.config,
         });
+        nextPlayers = settlement.nextPlayers;
+        nextPot = settlement.pot;
       }
 
       if (nextGekokujo) {
@@ -644,6 +651,7 @@ export class DaifugoPlugin
       table: nextTable,
       rankings: nextRankings,
       foulPlayerIds: nextFoulPlayers,
+      pot: isGameOver ? nextPot : ruleState.pot,
     };
 
     return { nextContext, nextRuleState, events };

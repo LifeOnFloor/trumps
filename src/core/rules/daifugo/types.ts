@@ -35,6 +35,7 @@ export interface DaifugoRuleState {
   readonly table: DaifugoTableState;
   readonly rankings: readonly string[];
   readonly foulPlayerIds: readonly string[];
+  readonly pot?: number;
 }
 
 export type DaifugoAction =

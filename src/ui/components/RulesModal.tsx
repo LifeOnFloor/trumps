@@ -102,7 +102,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         {
           name: t.rules.chipsTitle,
           enabled: !!config.chipsMode,
-          desc: `${t.rules.chipsDesc} (${config.initialChips ?? 1000})`,
+          desc: `${t.rules.chipsDesc} (${(config.initialChips ?? 1000).toLocaleString()}枚 / アンティ: ${config.ante ?? 0}枚 / ${config.chipSettlementType === 'pot_split' ? 'ポット配分' : '順位間移動'})`,
         },
       ],
     },

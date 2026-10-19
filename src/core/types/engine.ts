@@ -53,7 +53,7 @@ export interface CardGamePlugin<TRuleConfig, TRuleState, TAction> {
   readonly hasChips: boolean;
   readonly defaultConfig: TRuleConfig;
 
-  init(players: readonly { id: string; name: string }[], config?: Partial<TRuleConfig>): {
+  init(players: readonly { id: string; name: string; chips?: number }[], config?: Partial<TRuleConfig>): {
     context: BaseGameContext;
     ruleState: TRuleState;
   };

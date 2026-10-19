@@ -25,6 +25,9 @@ export interface DaifugoConfig {
   };
   chipsMode?: boolean;           // チップ対戦モード
   initialChips?: number;         // 初期チップ数
+  chipSettlementType?: 'ranking_transfer' | 'pot_split'; // 精算方式: 順位間移動 / ポット配分
+  ante?: number;                 // アンティ（参加費）
+  transferRate?: number;         // 基準移動レート（定額時）
 }
 
 export const DEFAULT_DAIFUGO_CONFIG: DaifugoConfig = {
@@ -51,6 +54,9 @@ export const DEFAULT_DAIFUGO_CONFIG: DaifugoConfig = {
   },
   chipsMode: false,
   initialChips: 1000,
+  chipSettlementType: 'ranking_transfer',
+  ante: 0,
+  transferRate: 100,
 };
 
 export function resolveRuleConflicts(config: DaifugoConfig): DaifugoConfig {

@@ -22,6 +22,11 @@ export interface TranslationDictionary {
     inviteUrlDesc: string;
     chipsMode: string;
     chipsModeDesc: string;
+    initialChipsLabel: string;
+    anteLabel: string;
+    settlementTypeLabel: string;
+    settlementRanking: string;
+    settlementPotSplit: string;
     rulePresets: string;
     ruleDetails: string;
     playersCount: string;
