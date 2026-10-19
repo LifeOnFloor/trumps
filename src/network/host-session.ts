@@ -12,6 +12,28 @@ export interface HostSessionOptions {
   plugin?: CardGamePlugin<DaifugoConfig, DaifugoRuleState, DaifugoAction>;
 }
 
+export function sanitizeEventsForPlayer(
+  events: readonly GameEvent[],
+  viewerPlayerId: string
+): GameEvent[] {
+  return events.map((event) => {
+    if (event.type === 'CARDS_PASSED') {
+      const payload = event.payload as { from: string; to: string; cards?: readonly unknown[] };
+      if (payload && payload.from !== viewerPlayerId && payload.to !== viewerPlayerId) {
+        return {
+          type: 'CARDS_PASSED',
+          payload: {
+            from: payload.from,
+            to: payload.to,
+            count: payload.cards?.length ?? 0,
+          },
+        };
+      }
+    }
+    return event;
+  });
+}
+
 export class HostSession {
   private readonly transport: ITransport;
   private readonly hostPlayer: { id: string; name: string };
@@ -231,16 +253,17 @@ export class HostSession {
 
     const events = this.gameRunner.execute(playerId, action);
 
-    // Broadcast sanitized state to all players
+    // Broadcast sanitized state and sanitized events to all players
     for (const player of this.players) {
       const sanitized = this.gameRunner.getSanitizedStateForPlayer(player.id);
+      const sanitizedEvents = sanitizeEventsForPlayer(events, player.id);
       if (player.peerId === this.transport.peerId) {
-        this.notifyStateChange(sanitized, events);
+        this.notifyStateChange(sanitized, sanitizedEvents);
       } else {
         const syncMsg: HostMessage = {
           type: 'SYNC_STATE',
           state: sanitized,
-          events: [...events],
+          events: sanitizedEvents,
         };
         this.transport.send(player.peerId, syncMsg);
       }

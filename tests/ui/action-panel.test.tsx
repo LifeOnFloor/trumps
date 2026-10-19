@@ -70,4 +70,62 @@ describe('ActionPanel Component', () => {
     fireEvent.click(playBtn);
     expect(handlePlay).toHaveBeenCalledTimes(1);
   });
+
+  it('SEVEN_PASS 発生時、必要枚数が選択されたら「渡す」ボタンが活性化し押下できること', () => {
+    const handlePassCards = vi.fn();
+    const { rerender } = render(
+      <ActionPanel
+        isMyTurn={true}
+        canPlay={false}
+        canPass={false}
+        onPlay={vi.fn()}
+        onPass={vi.fn()}
+        pendingHandAction={{ type: 'SEVEN_PASS', count: 2, targetPlayerName: 'Bob' }}
+        selectedCardsCount={1}
+        onPassCards={handlePassCards}
+      />
+    );
+
+    const passCardsBtn = screen.getByTestId('pass-cards-button');
+    expect(passCardsBtn).toBeDisabled();
+
+    // Select second card -> count reaches 2
+    rerender(
+      <ActionPanel
+        isMyTurn={true}
+        canPlay={false}
+        canPass={false}
+        onPlay={vi.fn()}
+        onPass={vi.fn()}
+        pendingHandAction={{ type: 'SEVEN_PASS', count: 2, targetPlayerName: 'Bob' }}
+        selectedCardsCount={2}
+        onPassCards={handlePassCards}
+      />
+    );
+
+    expect(passCardsBtn).not.toBeDisabled();
+    fireEvent.click(passCardsBtn);
+    expect(handlePassCards).toHaveBeenCalledTimes(1);
+  });
+
+  it('TEN_DISCARD 発生時、上限枚数以内なら「捨てる」ボタンが押下できること', () => {
+    const handleDiscardCards = vi.fn();
+    render(
+      <ActionPanel
+        isMyTurn={true}
+        canPlay={false}
+        canPass={false}
+        onPlay={vi.fn()}
+        onPass={vi.fn()}
+        pendingHandAction={{ type: 'TEN_DISCARD', count: 2 }}
+        selectedCardsCount={1}
+        onDiscardCards={handleDiscardCards}
+      />
+    );
+
+    const discardCardsBtn = screen.getByTestId('discard-cards-button');
+    expect(discardCardsBtn).not.toBeDisabled();
+    fireEvent.click(discardCardsBtn);
+    expect(handleDiscardCards).toHaveBeenCalledTimes(1);
+  });
 });

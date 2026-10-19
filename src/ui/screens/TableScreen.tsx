@@ -22,6 +22,8 @@ export interface TableScreenProps {
   recentEvents: readonly GameEvent[];
   onPlay: (cardIds: string[]) => void;
   onPass: () => void;
+  onPassCards?: (cardIds: string[]) => void;
+  onDiscardCards?: (cardIds: string[]) => void;
   onRestart?: () => void;
 }
 
@@ -34,6 +36,8 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   recentEvents,
   onPlay,
   onPass,
+  onPassCards,
+  onDiscardCards,
   onRestart,
 }) => {
   const { t } = useTranslation();
@@ -51,6 +55,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   const opponents = players.filter((p) => p.id !== myPlayerId);
 
   const isMyTurn = currentTurnPlayerId === myPlayerId;
+  const isEffectiveRevolution = ruleState.isRevolution !== ruleState.isElevenBack;
 
   const {
     selectedCardIds,
@@ -61,7 +66,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   } = useCardSelection({
     hand: myHand,
     table: ruleState.table,
-    isRevolution: ruleState.isRevolution,
+    isRevolution: isEffectiveRevolution,
     config: activeConfig,
     isMyTurn,
   });
@@ -79,6 +84,24 @@ export const TableScreen: React.FC<TableScreenProps> = ({
       clearSelection();
     }
   };
+
+  const handlePassCards = () => {
+    if (onPassCards) {
+      onPassCards(selectedCardIds);
+      clearSelection();
+    }
+  };
+
+  const handleDiscardCards = () => {
+    if (onDiscardCards) {
+      onDiscardCards(selectedCardIds);
+      clearSelection();
+    }
+  };
+
+  const targetPlayer = ruleState.pendingHandAction?.type === 'SEVEN_PASS'
+    ? players.find((p) => p.id === (ruleState.pendingHandAction as any)?.targetPlayerId)
+    : undefined;
 
   const handleCopyInviteLink = () => {
     if (peerId && typeof window !== 'undefined') {
@@ -161,7 +184,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
       <div className="w-full flex flex-col items-center justify-center my-auto px-2">
         <GameTable
           lastPlay={ruleState.table.lastPlay}
-          isRevolution={ruleState.isRevolution}
+          isRevolution={isEffectiveRevolution}
           lockedSuits={ruleState.table.lockedSuits}
         />
 
@@ -187,6 +210,18 @@ export const TableScreen: React.FC<TableScreenProps> = ({
           canPass={canPass}
           onPlay={handlePlay}
           onPass={handlePass}
+          pendingHandAction={
+            ruleState.pendingHandAction
+              ? {
+                  type: ruleState.pendingHandAction.type,
+                  count: ruleState.pendingHandAction.count,
+                  targetPlayerName: targetPlayer?.name,
+                }
+              : null
+          }
+          selectedCardsCount={selectedCardIds.length}
+          onPassCards={handlePassCards}
+          onDiscardCards={handleDiscardCards}
         />
 
         <PlayerHand

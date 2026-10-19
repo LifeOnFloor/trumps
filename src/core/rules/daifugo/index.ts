@@ -11,6 +11,7 @@ import type {
 import { createDeck, dealHands, shuffleDeck } from '../../utils/deck.js';
 import type { DaifugoConfig } from './config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from './config.js';
+import { executeTaxCardExchange } from './exchange.js';
 import type { DaifugoAction, DaifugoRuleState, PendingHandAction, PlayMeld } from './types.js';
 import {
   checkSequenceLock,
@@ -40,7 +41,8 @@ export class DaifugoPlugin
 
   init(
     players: readonly { id: string; name: string }[],
-    config?: Partial<DaifugoConfig>
+    config?: Partial<DaifugoConfig>,
+    options?: { previousRankings?: readonly string[] }
   ): { context: BaseGameContext; ruleState: DaifugoRuleState } {
     if (players.length < this.minPlayers || players.length > this.maxPlayers) {
       throw new Error(`Player count must be between ${this.minPlayers} and ${this.maxPlayers}`);
@@ -59,7 +61,7 @@ export class DaifugoPlugin
     const deck = shuffleDeck(createDeck({ jokerCount: 1 }));
     const hands = dealHands(deck, players.length);
 
-    const initialPlayers: PlayerState[] = players.map((p, idx) => ({
+    let initialPlayers: PlayerState[] = players.map((p, idx) => ({
       id: p.id,
       name: p.name,
       hand: hands[idx] ?? [],
@@ -67,11 +69,23 @@ export class DaifugoPlugin
       chips: mergedConfig.chipsMode ? (mergedConfig.initialChips ?? 1000) : undefined,
     }));
 
-    // Find starting player: whoever has D_3, or fallback to player 0
+    // If previousRankings exists and cardExchange is enabled, execute tax card exchange
+    if (mergedConfig.cardExchange && options?.previousRankings && options.previousRankings.length > 0) {
+      const { nextPlayers } = executeTaxCardExchange(initialPlayers, options.previousRankings);
+      initialPlayers = nextPlayers;
+    }
+
+    // Find starting player: whoever has D_3, or fallback to player 0 (or previous Daihinmin)
     let startIndex = 0;
     const d3Index = initialPlayers.findIndex((p) => p.hand.some((c) => c.id === 'D_3'));
     if (d3Index !== -1) {
       startIndex = d3Index;
+    } else if (options?.previousRankings && options.previousRankings.length > 0) {
+      const daihinminId = options.previousRankings[options.previousRankings.length - 1];
+      const daihinminIndex = initialPlayers.findIndex((p) => p.id === daihinminId);
+      if (daihinminIndex !== -1) {
+        startIndex = daihinminIndex;
+      }
     }
 
     const context: BaseGameContext = {
@@ -89,6 +103,7 @@ export class DaifugoPlugin
       turnDirection: 1,
       isSequenceLocked: false,
       isGekokujo: false,
+      previousRankings: options?.previousRankings,
       pendingHandAction: null,
       table: {
         lastPlay: null,
@@ -220,6 +235,22 @@ export class DaifugoPlugin
         payload: { from: playerId, to: pending.targetPlayerId, cards: cardsToPass },
       });
 
+      if (remainingHand.length === 0) {
+        const finishRes = this.recordPlayerFinish(
+          playerId,
+          nextPlayers,
+          nextRankings,
+          nextFoulPlayers,
+          ruleState.config,
+          ruleState.previousRankings
+        );
+        nextPlayers = finishRes.players;
+        nextRankings = finishRes.rankings;
+        nextFoulPlayers = finishRes.foulPlayers;
+        if (finishRes.isGekokujo) nextGekokujo = true;
+        events.push(...finishRes.events);
+      }
+
       nextPendingHandAction = null;
       nextTurnPlayerId = pending.targetPlayerId;
     } else if (action.type === 'DISCARD_CARDS') {
@@ -238,6 +269,22 @@ export class DaifugoPlugin
         type: 'CARDS_DISCARDED',
         payload: { playerId, cards: discardedCards },
       });
+
+      if (remainingHand.length === 0) {
+        const finishRes = this.recordPlayerFinish(
+          playerId,
+          nextPlayers,
+          nextRankings,
+          nextFoulPlayers,
+          ruleState.config,
+          ruleState.previousRankings
+        );
+        nextPlayers = finishRes.players;
+        nextRankings = finishRes.rankings;
+        nextFoulPlayers = finishRes.foulPlayers;
+        if (finishRes.isGekokujo) nextGekokujo = true;
+        events.push(...finishRes.events);
+      }
 
       nextPendingHandAction = null;
       nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection, 0);
@@ -351,56 +398,43 @@ export class DaifugoPlugin
       let playerFoul = false;
       if (remainingHand.length === 0) {
         playerFinished = true;
-        if (isProhibitedEnding(playedCards, ruleState.isRevolution, ruleState.config)) {
+        const isEffectiveRevCurrent = nextRevolution !== nextElevenBack;
+        if (isProhibitedEnding(playedCards, isEffectiveRevCurrent, ruleState.config)) {
           playerFoul = true;
           nextFoulPlayers.push(playerId);
           events.push({ type: 'FOUL_FINISH', payload: { playerId } });
         } else {
-          // Check Gekokujo & Miyako-Ochi on first finisher
-          if (nextRankings.length === 0) {
-            // Gekokujo
-            if (ruleState.config.gekokujo && ruleState.previousRankings && ruleState.previousRankings.length > 0) {
-              const prevDaihinmin = ruleState.previousRankings[ruleState.previousRankings.length - 1];
-              if (playerId === prevDaihinmin) {
-                nextGekokujo = true;
-                events.push({ type: 'GEKOKUJO', payload: { playerId } });
-              }
-            }
-
-            // Miyako-Ochi
-            if (ruleState.config.miyakoOchi && ruleState.previousRankings && ruleState.previousRankings.length > 0) {
-              const prevDaifugo = ruleState.previousRankings[0];
-              if (prevDaifugo && prevDaifugo !== playerId) {
-                events.push({ type: 'MIYAKO_OCHI', payload: { playerId: prevDaifugo } });
-                const totalPlayers = nextPlayers.length;
-                nextPlayers = nextPlayers.map((p) =>
-                  p.id === prevDaifugo
-                    ? { ...p, hand: [], isFinished: true, rankPosition: totalPlayers }
-                    : p
-                );
-                nextFoulPlayers.push(prevDaifugo);
-              }
-            }
-          }
-
-          nextRankings.push(playerId);
-          events.push({
-            type: 'PLAYER_FINISHED',
-            payload: { playerId, rank: nextRankings.length },
-          });
+          nextPlayers = nextPlayers.map((p, idx) =>
+            idx === playerIndex ? { ...p, hand: remainingHand } : p
+          );
+          const finishRes = this.recordPlayerFinish(
+            playerId,
+            nextPlayers,
+            nextRankings,
+            nextFoulPlayers,
+            ruleState.config,
+            ruleState.previousRankings
+          );
+          nextPlayers = finishRes.players;
+          nextRankings = finishRes.rankings;
+          nextFoulPlayers = finishRes.foulPlayers;
+          if (finishRes.isGekokujo) nextGekokujo = true;
+          events.push(...finishRes.events);
         }
       }
 
-      nextPlayers = nextPlayers.map((p, idx) =>
-        idx === playerIndex
-          ? {
-              ...p,
-              hand: remainingHand,
-              isFinished: playerFinished,
-              rankPosition: playerFinished && !playerFoul ? nextRankings.length : undefined,
-            }
-          : p
-      );
+      if (!playerFinished || playerFoul) {
+        nextPlayers = nextPlayers.map((p, idx) =>
+          idx === playerIndex
+            ? {
+                ...p,
+                hand: remainingHand,
+                isFinished: playerFinished,
+                rankPosition: undefined,
+              }
+            : p
+        );
+      }
 
       // Determine table state and next turn
       if (isSp3Return || isEightCut) {
@@ -591,6 +625,71 @@ export class DaifugoPlugin
     return {
       context: sanitizedContext,
       ruleState,
+    };
+  }
+
+  private recordPlayerFinish(
+    playerId: string,
+    players: readonly PlayerState[],
+    rankings: readonly string[],
+    foulPlayers: readonly string[],
+    config: DaifugoConfig,
+    previousRankings?: readonly string[]
+  ): {
+    players: PlayerState[];
+    rankings: string[];
+    foulPlayers: string[];
+    isGekokujo: boolean;
+    events: GameEvent[];
+  } {
+    let nextPlayers = [...players];
+    let nextRankings = [...rankings];
+    let nextFoulPlayers = [...foulPlayers];
+    let nextGekokujo = false;
+    const events: GameEvent[] = [];
+
+    if (nextRankings.length === 0) {
+      if (config.gekokujo && previousRankings && previousRankings.length > 0) {
+        const prevDaihinmin = previousRankings[previousRankings.length - 1];
+        if (playerId === prevDaihinmin) {
+          nextGekokujo = true;
+          events.push({ type: 'GEKOKUJO', payload: { playerId } });
+        }
+      }
+
+      if (config.miyakoOchi && previousRankings && previousRankings.length > 0) {
+        const prevDaifugo = previousRankings[0];
+        if (prevDaifugo && prevDaifugo !== playerId) {
+          events.push({ type: 'MIYAKO_OCHI', payload: { playerId: prevDaifugo } });
+          const totalPlayers = nextPlayers.length;
+          nextPlayers = nextPlayers.map((p) =>
+            p.id === prevDaifugo
+              ? { ...p, hand: [], isFinished: true, rankPosition: totalPlayers }
+              : p
+          );
+          nextFoulPlayers.push(prevDaifugo);
+        }
+      }
+    }
+
+    nextRankings.push(playerId);
+    events.push({
+      type: 'PLAYER_FINISHED',
+      payload: { playerId, rank: nextRankings.length },
+    });
+
+    nextPlayers = nextPlayers.map((p) =>
+      p.id === playerId
+        ? { ...p, isFinished: true, rankPosition: nextRankings.length }
+        : p
+    );
+
+    return {
+      players: nextPlayers,
+      rankings: nextRankings,
+      foulPlayers: nextFoulPlayers,
+      isGekokujo: nextGekokujo,
+      events,
     };
   }
 

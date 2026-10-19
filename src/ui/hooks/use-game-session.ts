@@ -132,6 +132,22 @@ export function useGameSession() {
     }
   }, []);
 
+  const dispatchPassCards = useCallback((cardIds: string[]) => {
+    if (hostSessionRef.current) {
+      hostSessionRef.current.dispatchHostAction({ type: 'PASS_CARDS', cardIds });
+    } else if (clientSessionRef.current) {
+      clientSessionRef.current.dispatch({ type: 'PASS_CARDS', cardIds });
+    }
+  }, []);
+
+  const dispatchDiscardCards = useCallback((cardIds: string[]) => {
+    if (hostSessionRef.current) {
+      hostSessionRef.current.dispatchHostAction({ type: 'DISCARD_CARDS', cardIds });
+    } else if (clientSessionRef.current) {
+      clientSessionRef.current.dispatch({ type: 'DISCARD_CARDS', cardIds });
+    }
+  }, []);
+
   return {
     isHost,
     peerId,
@@ -148,5 +164,7 @@ export function useGameSession() {
     startGame,
     dispatchPlay,
     dispatchPass,
+    dispatchPassCards,
+    dispatchDiscardCards,
   };
 }

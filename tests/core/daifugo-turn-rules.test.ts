@@ -185,4 +185,49 @@ describe('Daifugo Turn and Strength Rules (11-back, 9-reverse, 5-skip, sandstorm
     expect(res2.events.some((e) => e.type === 'SANDSTORM')).toBe(true);
     expect(res2.nextRuleState.isRevolution).toBe(true);
   });
+
+  it('11-back: prohibited endings respect effective revolution state (3 is prohibited, 2 is allowed)', () => {
+    const config: Partial<DaifugoConfig> = {
+      elevenBack: true,
+      prohibitedEndings: {
+        joker: false,
+        eight: false,
+        two: true,
+        three: true,
+      },
+    };
+    const { context, ruleState } = plugin.init(
+      [
+        { id: 'p1', name: 'Alice' },
+        { id: 'p2', name: 'Bob' },
+        { id: 'p3', name: 'Charlie' },
+      ],
+      config
+    );
+
+    const testContext = {
+      ...context,
+      players: [
+        { ...context.players[0]!, hand: [c('j1', 'spade', 11)] },
+        { ...context.players[1]!, hand: [c('t3', 'spade', 3)] }, // finishing with 3 during 11-back
+        { ...context.players[2]!, hand: [c('x', 'club', 4)] },
+      ],
+      currentTurnPlayerId: 'p1',
+    };
+
+    // p1 plays 11 -> triggers 11-back
+    const res1 = plugin.execute(testContext, ruleState, 'p1', {
+      type: 'PLAY',
+      cardIds: ['j1'],
+    });
+
+    // p2 finishes with 3 during 11-back -> 3 is highest card in 11-back, so prohibited!
+    const res2 = plugin.execute(res1.nextContext, res1.nextRuleState, 'p2', {
+      type: 'PLAY',
+      cardIds: ['t3'],
+    });
+
+    expect(res2.events.some((e) => e.type === 'FOUL_FINISH')).toBe(true);
+    expect(res2.nextRuleState.foulPlayerIds).toContain('p2');
+  });
 });

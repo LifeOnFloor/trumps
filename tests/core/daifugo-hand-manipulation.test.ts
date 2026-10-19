@@ -153,4 +153,97 @@ describe('Daifugo Hand Manipulation Rules (7-pass, 10-discard, and Card Exchange
     expect(p3Hand.some((c) => c.id === 'a1')).toBe(true);
     expect(p3Hand.some((c) => c.id === 'a2')).toBe(true);
   });
+
+  it('7-pass: player finishes and ranks when passing their last card', () => {
+    const config: Partial<DaifugoConfig> = { sevenPass: true };
+    const { context, ruleState } = plugin.init(
+      [
+        { id: 'p1', name: 'Alice' },
+        { id: 'p2', name: 'Bob' },
+        { id: 'p3', name: 'Charlie' },
+      ],
+      config
+    );
+
+    const testContext = {
+      ...context,
+      players: [
+        { ...context.players[0]!, hand: [c('c1', 'spade', 7), c('c2', 'heart', 3)] },
+        { ...context.players[1]!, hand: [c('c3', 'heart', 8)] },
+        { ...context.players[2]!, hand: [c('c4', 'diamond', 8)] },
+      ],
+      currentTurnPlayerId: 'p1',
+    };
+
+    const res1 = plugin.execute(testContext, ruleState, 'p1', {
+      type: 'PLAY',
+      cardIds: ['c1'],
+    });
+
+    const res2 = plugin.execute(res1.nextContext, res1.nextRuleState, 'p1', {
+      type: 'PASS_CARDS',
+      cardIds: ['c2'],
+    });
+
+    const p1 = res2.nextContext.players.find((p) => p.id === 'p1')!;
+    expect(p1.hand.length).toBe(0);
+    expect(p1.isFinished).toBe(true);
+    expect(p1.rankPosition).toBe(1);
+    expect(res2.nextRuleState.rankings).toContain('p1');
+    expect(res2.events.some((e) => e.type === 'PLAYER_FINISHED' && (e.payload as any).playerId === 'p1')).toBe(true);
+  });
+
+  it('10-discard: player finishes and ranks when discarding their last card', () => {
+    const config: Partial<DaifugoConfig> = { tenDiscard: true };
+    const { context, ruleState } = plugin.init(
+      [
+        { id: 'p1', name: 'Alice' },
+        { id: 'p2', name: 'Bob' },
+        { id: 'p3', name: 'Charlie' },
+      ],
+      config
+    );
+
+    const testContext = {
+      ...context,
+      players: [
+        { ...context.players[0]!, hand: [c('c1', 'spade', 10), c('c2', 'heart', 3)] },
+        { ...context.players[1]!, hand: [c('c3', 'heart', 8)] },
+        { ...context.players[2]!, hand: [c('c4', 'diamond', 8)] },
+      ],
+      currentTurnPlayerId: 'p1',
+    };
+
+    const res1 = plugin.execute(testContext, ruleState, 'p1', {
+      type: 'PLAY',
+      cardIds: ['c1'],
+    });
+
+    const res2 = plugin.execute(res1.nextContext, res1.nextRuleState, 'p1', {
+      type: 'DISCARD_CARDS',
+      cardIds: ['c2'],
+    });
+
+    const p1 = res2.nextContext.players.find((p) => p.id === 'p1')!;
+    expect(p1.hand.length).toBe(0);
+    expect(p1.isFinished).toBe(true);
+    expect(p1.rankPosition).toBe(1);
+    expect(res2.nextRuleState.rankings).toContain('p1');
+    expect(res2.events.some((e) => e.type === 'PLAYER_FINISHED' && (e.payload as any).playerId === 'p1')).toBe(true);
+  });
+
+  it('init: integrates cardExchange when previousRankings option is provided', () => {
+    const config: Partial<DaifugoConfig> = { cardExchange: true };
+    const { ruleState } = plugin.init(
+      [
+        { id: 'p1', name: 'Alice' },
+        { id: 'p2', name: 'Bob' },
+        { id: 'p3', name: 'Charlie' },
+      ],
+      config,
+      { previousRankings: ['p1', 'p2', 'p3'] }
+    );
+
+    expect(ruleState.previousRankings).toEqual(['p1', 'p2', 'p3']);
+  });
 });

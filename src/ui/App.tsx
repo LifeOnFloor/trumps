@@ -21,6 +21,8 @@ const MainAppContent: React.FC = () => {
     startGame,
     dispatchPlay,
     dispatchPass,
+    dispatchPassCards,
+    dispatchDiscardCards,
   } = useGameSession();
 
   if (!state) {
@@ -49,6 +51,8 @@ const MainAppContent: React.FC = () => {
       recentEvents={recentEvents}
       onPlay={dispatchPlay}
       onPass={dispatchPass}
+      onPassCards={dispatchPassCards}
+      onDiscardCards={dispatchDiscardCards}
       onRestart={() => window.location.reload()}
     />
   );

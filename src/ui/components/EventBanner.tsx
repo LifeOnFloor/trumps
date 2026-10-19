@@ -15,6 +15,33 @@ export const EventBanner: React.FC<EventBannerProps> = ({ events }) => {
       if (event.type === 'EIGHT_CUT') {
         setActiveMessage({ text: '8切り！場が流れました' });
         break;
+      } else if (event.type === 'ELEVEN_BACK') {
+        setActiveMessage({ text: '11バック発動！一時的に強さが逆転しました', isAlert: true });
+        break;
+      } else if (event.type === 'SANDSTORM') {
+        setActiveMessage({ text: '🌪️ 砂嵐！場を支配し革命が発動しました', isAlert: true });
+        break;
+      } else if (event.type === 'MIYAKO_OCHI') {
+        setActiveMessage({ text: '👑 都落ち！前大富豪が失格・最下位に転落しました', isAlert: true });
+        break;
+      } else if (event.type === 'GEKOKUJO') {
+        setActiveMessage({ text: '⚔️ 下剋上！大貧民が1位となり順位が完全逆転しました', isAlert: true });
+        break;
+      } else if (event.type === 'NINE_REVERSE') {
+        setActiveMessage({ text: '🔄 9リバース！回り順が逆転しました' });
+        break;
+      } else if (event.type === 'NINE_REVOLUTION') {
+        setActiveMessage({ text: '⚡ 9革命！一時的に強さが逆転しました', isAlert: true });
+        break;
+      } else if (event.type === 'FIVE_SKIP') {
+        setActiveMessage({ text: '⏭️ 5スキップ！手番がスキップされました' });
+        break;
+      } else if (event.type === 'SUIT_LOCKED') {
+        setActiveMessage({ text: '🔒 スート縛り！同じスートしか出せません', isAlert: true });
+        break;
+      } else if (event.type === 'SEQUENCE_LOCKED') {
+        setActiveMessage({ text: '🔢 連番縛り！連続する数字しか出せません', isAlert: true });
+        break;
       } else if (event.type === 'REVOLUTION') {
         setActiveMessage({ text: '革命発生！強さが逆転しました', isAlert: true });
         break;

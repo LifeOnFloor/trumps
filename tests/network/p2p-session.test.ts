@@ -181,4 +181,42 @@ describe('P2P Multi-player Session (Host-Client with MemoryTransport)', () => {
     expect(newJoinedPlayer.id).toBe('c2_p');
     expect(client1Session.getPlayers()).toHaveLength(3);
   });
+
+  it('8. イベントサニタイズ: CARDS_PASSED イベントで第三者には渡されたカード詳細が送られず、枚数情報のみとなること', async () => {
+    await client1Session.joinRoom('host_peer');
+    await client2Session.joinRoom('host_peer');
+
+    hostSession.updateConfig({ sevenPass: true });
+    hostSession.startGame();
+
+    // Trigger CARDS_PASSED manually through runner
+    const runner = hostSession.getGameRunner()!;
+    // Setup state where host has 7
+    let c1Events: readonly GameEvent[] = [];
+    client1Session.onStateChange((_, events) => {
+      c1Events = events;
+    });
+
+    // Simulate 7-pass action from host_p to c2_p
+    // Dispatch action that triggers CARDS_PASSED
+    // We can directly invoke dispatchHostAction or simulate via game runner
+    const testCard = { id: 'c_test', suit: 'spade' as const, rank: 3 as const, isJoker: false };
+    const rawEvents: GameEvent[] = [
+      {
+        type: 'CARDS_PASSED',
+        payload: { from: 'host_p', to: 'c2_p', cards: [testCard] },
+      },
+    ];
+
+    // Check sanitizeEvents helper method directly or verify client1 receives sanitized payload
+    // If client1 is a third-party (neither host_p nor c2_p), client1 should not see cards
+    const { sanitizeEventsForPlayer } = await import('../../src/network/host-session.js');
+    const sanitizedForC1 = sanitizeEventsForPlayer(rawEvents, 'c1_p');
+    expect((sanitizedForC1[0]!.payload as any).cards).toBeUndefined();
+    expect((sanitizedForC1[0]!.payload as any).count).toBe(1);
+
+    // But c2_p (recipient) does see cards
+    const sanitizedForC2 = sanitizeEventsForPlayer(rawEvents, 'c2_p');
+    expect((sanitizedForC2[0]!.payload as any).cards).toBeDefined();
+  });
 });
