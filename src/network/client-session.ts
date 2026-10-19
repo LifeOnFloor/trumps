@@ -132,6 +132,10 @@ export class ClientSession {
       switch (msg.type) {
         case 'ROOM_JOINED':
           this.players = msg.players;
+          if (msg.config) {
+            this.currentConfig = msg.config;
+            this.configUpdatedListeners.forEach((l) => l(msg.config));
+          }
           this.roomJoinedListeners.forEach((l) => l(this.players));
           break;
 
@@ -149,11 +153,19 @@ export class ClientSession {
 
         case 'GAME_STARTED':
           this.currentState = msg.state;
+          if (msg.state.ruleState?.config) {
+            this.currentConfig = msg.state.ruleState.config;
+            this.configUpdatedListeners.forEach((l) => l(msg.state.ruleState.config));
+          }
           this.stateChangeListeners.forEach((l) => l(msg.state, [{ type: 'GAME_STARTED' }]));
           break;
 
         case 'SYNC_STATE':
           this.currentState = msg.state;
+          if (msg.state.ruleState?.config) {
+            this.currentConfig = msg.state.ruleState.config;
+            this.configUpdatedListeners.forEach((l) => l(msg.state.ruleState.config));
+          }
           this.stateChangeListeners.forEach((l) => l(msg.state, msg.events));
           break;
 

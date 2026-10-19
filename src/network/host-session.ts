@@ -233,6 +233,7 @@ export class HostSession {
           type: 'ROOM_JOINED',
           assignedPlayerId: p.id,
           players: publicPlayers,
+          config: this.currentConfig,
         };
         this.transport.send(p.peerId, joinMsg);
 

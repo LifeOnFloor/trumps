@@ -33,9 +33,21 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         { name: t.rules.revolutionTitle, enabled: config.revolution, desc: t.rules.revolutionDesc },
         { name: t.rules.sandstormTitle, enabled: config.sandstorm, desc: t.rules.sandstormDesc },
         {
-          name: t.rules.nineEffectTitle,
+          name: `${t.rules.nineEffectTitle}${
+            config.nineEffect === 'reverse'
+              ? '（9リバース）'
+              : config.nineEffect === 'revolution'
+              ? '（9一時革命）'
+              : ''
+          }`,
           enabled: config.nineEffect !== 'none',
-          desc: `${t.rules.nineEffectDesc} [${config.nineEffect}]`,
+          desc: `${t.rules.nineEffectDesc} [${
+            config.nineEffect === 'reverse'
+              ? '9リバース'
+              : config.nineEffect === 'revolution'
+              ? '9一時革命'
+              : 'OFF'
+          }]`,
         },
       ],
     },
@@ -43,9 +55,25 @@ export const RulesModal: React.FC<RulesModalProps> = ({
       title: t.rules.categories.lock,
       items: [
         {
-          name: t.rules.suitLockTitle,
+          name: `${t.rules.suitLockTitle}${
+            config.suitLock === 'single'
+              ? '（片縛り）'
+              : config.suitLock === 'double'
+              ? '（両縛り）'
+              : config.suitLock === 'geki'
+              ? '（激縛り）'
+              : ''
+          }`,
           enabled: config.suitLock !== 'none',
-          desc: `${t.rules.suitLockDesc} [${config.suitLock}]`,
+          desc: `${t.rules.suitLockDesc} [${
+            config.suitLock === 'single'
+              ? '片縛り'
+              : config.suitLock === 'double'
+              ? '両縛り'
+              : config.suitLock === 'geki'
+              ? '激縛り'
+              : 'OFF'
+          }]`,
         },
         { name: t.rules.sequenceLockTitle, enabled: config.sequenceLock, desc: t.rules.sequenceLockDesc },
         { name: t.rules.spadeThreeTitle, enabled: config.spadeThreeReturn, desc: t.rules.spadeThreeDesc },

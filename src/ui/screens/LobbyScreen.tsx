@@ -64,6 +64,13 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
     }
   }, []);
 
+  // Automatically switch to client view if client has joined or has room config
+  useEffect(() => {
+    if (!isHost && (peerId || players.length > 0)) {
+      setMode('client');
+    }
+  }, [isHost, peerId, players.length]);
+
   const handleCopyInviteLink = () => {
     if (peerId && typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -442,13 +449,100 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             </div>
 
             {/* Room Rules Summary for Client */}
-            <div className="p-3 rounded-2xl bg-emerald-950/70 border border-emerald-800 text-xs space-y-1">
-              <div className="flex items-center justify-between text-yellow-300 font-bold">
-                <span>{t.lobby.roomRules}</span>
-                <span>{config.chipsMode ? '💰 ON' : 'OFF'}</span>
+            <div className="p-3.5 rounded-2xl bg-emerald-950/70 border border-emerald-800 text-xs space-y-2">
+              <div className="flex items-center justify-between text-yellow-300 font-extrabold">
+                <span className="flex items-center space-x-1">
+                  <span>⚙️</span>
+                  <span>{t.lobby.roomRules}</span>
+                </span>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">
+                  {config.chipsMode ? '💰 チップ対戦' : '通常対戦'}
+                </span>
               </div>
-              <div className="text-[11px] text-emerald-300/80">
-                {t.rules.eightCutTitle}: {config.eightCut ? 'ON' : 'OFF'} • {t.rules.revolutionTitle}: {config.revolution ? 'ON' : 'OFF'} • {t.rules.spadeThreeTitle}: {config.spadeThreeReturn ? 'ON' : 'OFF'}
+
+              {/* Special rules badges */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {/* Suit Lock Badge */}
+                {config.suitLock !== 'none' && (
+                  <span className="px-2 py-0.5 rounded-lg bg-yellow-400 text-gray-950 font-black text-[11px]">
+                    {config.suitLock === 'single' && '片縛り'}
+                    {config.suitLock === 'double' && '両縛り'}
+                    {config.suitLock === 'geki' && '激縛り'}
+                  </span>
+                )}
+                {/* 9 Effect Badge */}
+                {config.nineEffect !== 'none' && (
+                  <span className="px-2 py-0.5 rounded-lg bg-yellow-400 text-gray-950 font-black text-[11px]">
+                    {config.nineEffect === 'reverse' && '9リバース'}
+                    {config.nineEffect === 'revolution' && '9一時革命'}
+                  </span>
+                )}
+                {/* Other Active Rules */}
+                {config.eightCut && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    8切り
+                  </span>
+                )}
+                {config.revolution && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    革命
+                  </span>
+                )}
+                {config.elevenBack && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    11バック
+                  </span>
+                )}
+                {config.miyakoOchi && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    都落ち
+                  </span>
+                )}
+                {config.spadeThreeReturn && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    スペ3返し
+                  </span>
+                )}
+                {config.stairs && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    階段
+                  </span>
+                )}
+                {config.fiveSkip && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    5スキップ
+                  </span>
+                )}
+                {config.sevenPass && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    7渡し
+                  </span>
+                )}
+                {config.tenDiscard && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    10捨て
+                  </span>
+                )}
+                {config.sandstorm && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    砂嵐
+                  </span>
+                )}
+                {config.gekokujo && (
+                  <span className="px-2 py-0.5 rounded-lg bg-emerald-800 text-emerald-100 font-bold text-[11px] border border-emerald-600">
+                    下剋上
+                  </span>
+                )}
+              </div>
+
+              <div className="pt-1 text-right">
+                <button
+                  type="button"
+                  onClick={() => setIsRulesModalOpen(true)}
+                  className="text-[11px] text-yellow-400 hover:text-yellow-300 font-extrabold underline"
+                >
+                  📋 全ルール詳細を確認
+                </button>
               </div>
             </div>
 

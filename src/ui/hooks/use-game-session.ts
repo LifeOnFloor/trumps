@@ -60,6 +60,9 @@ export function useGameSession() {
         session.onStateChange((newState, events) => {
           setState(newState);
           setRecentEvents(events);
+          if (newState.ruleState?.config) {
+            setRoomConfig(newState.ruleState.config);
+          }
         });
 
         session.onPlayersChange((updatedPlayers) => {
@@ -97,6 +100,10 @@ export function useGameSession() {
 
       session.onRoomJoined((roomPlayers) => {
         setPlayers([...roomPlayers]);
+        const conf = session.getConfig();
+        if (conf) {
+          setRoomConfig(conf);
+        }
       });
 
       session.onPlayerJoined((player) => {
@@ -111,6 +118,9 @@ export function useGameSession() {
       session.onStateChange((newState, events) => {
         setState(newState);
         setRecentEvents(events);
+        if (newState.ruleState?.config) {
+          setRoomConfig(newState.ruleState.config);
+        }
       });
 
       session.onActionRejected((reason) => {
@@ -153,6 +163,7 @@ export function useGameSession() {
     if (hostSessionRef.current) {
       try {
         const configToUse = latestConfig ?? roomConfig;
+        setRoomConfig(configToUse);
         hostSessionRef.current.startGame(configToUse);
       } catch (err: any) {
         setError(err.message);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { DaifugoRuleState } from '../../core/rules/daifugo/types.js';
-import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
+import { DEFAULT_DAIFUGO_CONFIG, type DaifugoConfig } from '../../core/rules/daifugo/config.js';
 import { useTranslation } from '../../i18n/context.js';
 import { LanguageSelector } from '../components/LanguageSelector.js';
 import { useCardSelection } from '../hooks/use-card-selection.js';
@@ -49,8 +49,8 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Active configuration (prefer roomConfig or ruleState.config)
-  const activeConfig = roomConfig ?? ruleState.config;
+  // Active configuration (prefer ruleState.config as single source of truth during gameplay)
+  const activeConfig = ruleState.config ?? roomConfig ?? DEFAULT_DAIFUGO_CONFIG;
 
   const myPlayer = players.find((p) => p.id === myPlayerId);
   const myHand = myPlayer?.hand ?? [];

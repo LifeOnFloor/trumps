@@ -10,7 +10,7 @@ export type ClientMessage =
 
 // ホスト -> クライアント
 export type HostMessage =
-  | { type: 'ROOM_JOINED'; assignedPlayerId: string; players: { id: string; name: string }[] }
+  | { type: 'ROOM_JOINED'; assignedPlayerId: string; players: { id: string; name: string }[]; config: DaifugoConfig }
   | { type: 'PLAYER_JOINED'; player: { id: string; name: string } }
   | { type: 'CONFIG_UPDATED'; config: DaifugoConfig }
   | { type: 'GAME_STARTED'; state: SanitizedState<DaifugoRuleState> }
