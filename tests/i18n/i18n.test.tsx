@@ -25,7 +25,7 @@ describe('I18n Localization', () => {
     );
 
     expect(screen.getByTestId('current-lang')).toHaveTextContent('ja');
-    expect(screen.getByTestId('play-text')).toHaveTextContent('出す (PLAY)');
+    expect(screen.getByTestId('play-text')).toHaveTextContent('出す');
   });
 
   it('言語セレクターでEnglishをクリックすると英語に切り替わること', () => {
@@ -38,11 +38,11 @@ describe('I18n Localization', () => {
 
     fireEvent.click(screen.getByTestId('lang-en'));
     expect(screen.getByTestId('current-lang')).toHaveTextContent('en');
-    expect(screen.getByTestId('play-text')).toHaveTextContent('PLAY');
+    expect(screen.getByTestId('play-text')).toHaveTextContent('Play');
 
     // Switch back to ja
     fireEvent.click(screen.getByTestId('lang-ja'));
     expect(screen.getByTestId('current-lang')).toHaveTextContent('ja');
-    expect(screen.getByTestId('play-text')).toHaveTextContent('出す (PLAY)');
+    expect(screen.getByTestId('play-text')).toHaveTextContent('出す');
   });
 });

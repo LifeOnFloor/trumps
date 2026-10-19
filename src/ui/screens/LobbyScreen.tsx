@@ -167,7 +167,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
         onClose={() => setIsRulesModalOpen(false)}
       />
 
-      <div className="w-full max-w-lg p-5 sm:p-7 bg-emerald-900/80 backdrop-blur-xl rounded-3xl border border-emerald-600/50 shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-lg p-5 sm:p-7 bg-emerald-950/95 rounded-3xl border border-emerald-600/50 shadow-2xl relative overflow-hidden">
         {/* Top Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">

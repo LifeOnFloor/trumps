@@ -40,8 +40,8 @@ describe('LobbyScreen Component', () => {
       />
     );
 
-    // Click "部屋を作る (Host)"
-    fireEvent.click(screen.getByText(/部屋を作る \(Host\)/));
+    // Click "部屋を作る"
+    fireEvent.click(screen.getByText(/部屋を作る/));
     expect(handleStartHost).toHaveBeenCalledTimes(1);
 
     // In Host screen, verify presets & chips mode
@@ -67,7 +67,7 @@ describe('LobbyScreen Component', () => {
     );
 
     // Switch to host view
-    fireEvent.click(screen.getByText(/部屋を作る \(Host\)/));
+    fireEvent.click(screen.getByText(/部屋を作る/));
 
     const toggle = screen.getByTestId('chips-mode-toggle');
     fireEvent.click(toggle);

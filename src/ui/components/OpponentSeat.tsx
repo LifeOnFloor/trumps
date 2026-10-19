@@ -20,7 +20,7 @@ export const OpponentSeat: React.FC<OpponentSeatProps> = ({
           ? 'bg-red-950/40 border-red-800/60 opacity-60'
           : isCurrentTurn
           ? 'bg-gradient-to-b from-yellow-500/25 to-amber-600/30 border-yellow-400 ring-2 ring-yellow-400 shadow-yellow-500/20 shadow-lg scale-105'
-          : 'bg-emerald-900/60 border-emerald-700/60 backdrop-blur-sm'
+          : 'bg-emerald-900/90 border-emerald-700/60'
       }`}
     >
       {isDisconnected && (
@@ -58,7 +58,7 @@ export const OpponentSeat: React.FC<OpponentSeatProps> = ({
             data-testid={`chips-${player.id}`}
             className={`flex items-center space-x-0.5 font-black text-[11px] px-1.5 py-0.5 rounded-full border ${
               player.chips < 0
-                ? 'bg-red-950/90 text-red-400 border-red-500/60 shadow-sm animate-pulse'
+                ? 'bg-red-950/95 text-red-400 border-red-500/80 shadow-sm'
                 : 'bg-emerald-950/80 text-yellow-400 border-yellow-500/40'
             }`}
           >

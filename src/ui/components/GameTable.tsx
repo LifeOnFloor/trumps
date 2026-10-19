@@ -27,7 +27,7 @@ export const GameTable: React.FC<GameTableProps> = ({
       {isRevolution && (
         <div
           data-testid="revolution-badge"
-          className="absolute top-2 left-3 px-3 py-1 bg-red-600 text-white font-extrabold text-xs tracking-wider rounded-md uppercase animate-pulse shadow-md"
+          className="absolute top-2 left-3 px-3 py-1 bg-red-600 border border-red-300 text-white font-extrabold text-xs tracking-wider rounded-md uppercase shadow-md"
         >
           REVOLUTION
         </div>

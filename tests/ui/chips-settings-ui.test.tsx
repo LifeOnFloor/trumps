@@ -28,8 +28,8 @@ describe('Chips Settings UI and Badges', () => {
       </I18nProvider>
     );
 
-    // Click "部屋を作る (Host)" to enter host mode
-    fireEvent.click(screen.getByText(/部屋を作る \(Host\)/));
+    // Click "部屋を作る" to enter host mode
+    fireEvent.click(screen.getByText(/部屋を作る/));
 
     // Initially when chipsMode is false, tabs are not displayed
     expect(screen.queryByTestId('chip-tab-preset')).toBeNull();

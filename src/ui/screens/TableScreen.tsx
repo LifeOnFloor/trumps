@@ -65,6 +65,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
     clearSelection,
     canPlay,
     canPass,
+    playHintKey,
   } = useCardSelection({
     hand: myHand,
     table: ruleState.table,
@@ -216,7 +217,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         {/* Turn prompt indicator */}
         <div className="text-xs sm:text-sm font-black text-emerald-200 mt-2 flex items-center space-x-1">
           {isMyTurn ? (
-            <span className="text-yellow-400 animate-pulse bg-emerald-950/80 px-3.5 py-1 rounded-full border border-yellow-400/50 shadow-sm">
+            <span className="text-yellow-400 font-extrabold bg-emerald-950 px-3.5 py-1 rounded-full border border-yellow-400/80 shadow-md">
               {t.table.yourTurn}
             </span>
           ) : (
@@ -233,6 +234,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
           isMyTurn={isMyTurn}
           canPlay={canPlay}
           canPass={canPass}
+          hintText={isMyTurn ? t.table.hints[playHintKey] : undefined}
           onPlay={handlePlay}
           onPass={handlePass}
           pendingHandAction={

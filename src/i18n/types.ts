@@ -71,6 +71,16 @@ export interface TranslationDictionary {
     selectedCount: string;
     chipsBadge: string;
     disconnected: string;
+    hints: {
+      selectCards: string;
+      waitingTurn: string;
+      readyToPlay: string;
+      invalidMeld: string;
+      countMismatch: string;
+      notStrongEnough: string;
+      suitLocked: string;
+      sequenceLocked: string;
+    };
   };
   rules: {
     title: string;

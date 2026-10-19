@@ -128,4 +128,20 @@ describe('ActionPanel Component', () => {
     fireEvent.click(discardCardsBtn);
     expect(handleDiscardCards).toHaveBeenCalledTimes(1);
   });
+
+  it('hintText が渡された場合、play-hint に正しく表示されること', () => {
+    render(
+      <ActionPanel
+        isMyTurn={true}
+        canPlay={false}
+        canPass={true}
+        hintText="場と同じ枚数を選んでください"
+        onPlay={vi.fn()}
+        onPass={vi.fn()}
+      />
+    );
+
+    const hint = screen.getByTestId('play-hint');
+    expect(hint).toHaveTextContent('場と同じ枚数を選んでください');
+  });
 });

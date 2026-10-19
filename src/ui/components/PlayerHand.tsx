@@ -39,7 +39,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
               data-testid="my-chips"
               className={`flex items-center space-x-1 font-black px-3 py-1 rounded-full border shadow-sm ${
                 chips < 0
-                  ? 'bg-red-950/90 text-red-400 border-red-500/70 animate-pulse'
+                  ? 'bg-red-950/95 text-red-400 border-red-500/80'
                   : 'bg-emerald-950/90 text-yellow-400 border-yellow-500/50'
               }`}
             >
@@ -53,7 +53,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
         </div>
 
         {selectedCardIds.length > 0 && (
-          <span className="font-extrabold text-yellow-300 bg-emerald-900/90 px-2.5 py-0.5 rounded-full border border-yellow-400/60 shadow-sm animate-pulse">
+          <span className="font-extrabold text-yellow-300 bg-emerald-900 px-2.5 py-0.5 rounded-full border border-yellow-400/80 shadow-md">
             {selectedCardIds.length}枚選択中
           </span>
         )}
