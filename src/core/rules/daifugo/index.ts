@@ -44,7 +44,7 @@ export class DaifugoPlugin
   init(
     players: readonly { id: string; name: string; chips?: number }[],
     config?: Partial<DaifugoConfig>,
-    options?: { previousRankings?: readonly string[] }
+    options?: { previousRankings?: readonly string[]; round?: number }
   ): { context: BaseGameContext; ruleState: DaifugoRuleState } {
     if (players.length < this.minPlayers || players.length > this.maxPlayers) {
       throw new Error(`Player count must be between ${this.minPlayers} and ${this.maxPlayers}`);
@@ -78,7 +78,7 @@ export class DaifugoPlugin
         anteType: mergedConfig.anteType ?? (mergedConfig.ante ? 'fixed' : 'none'),
         baseAnte: mergedConfig.baseAnte ?? mergedConfig.ante ?? 0,
       };
-      const anteAmount = calculateAnte(anteConfig as any, options?.previousRankings ? 1 : 0);
+      const anteAmount = calculateAnte(anteConfig as any, options?.round ?? (options?.previousRankings ? 1 : 0));
       const allowDebt = mergedConfig.bankruptcyRule === 'allow_debt';
 
       if (anteAmount > 0) {
@@ -552,6 +552,19 @@ export class DaifugoPlugin
           passedPlayerIds: [],
         };
         nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection, skipCount);
+
+        // If skip loops back to the same player who played, the field is cleared
+        if (nextTurnPlayerId === playerId && !playerFinished) {
+          events.push({ type: 'TABLE_CLEARED' });
+          nextElevenBack = false;
+          nextTable = {
+            lastPlay: null,
+            lockedSuits: null,
+            isSequenceLocked: false,
+            requiredNextRank: null,
+            passedPlayerIds: [],
+          };
+        }
 
         // Check 7-pass or 10-discard triggers
         if (!playerFinished && remainingHand.length > 0) {

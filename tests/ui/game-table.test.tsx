@@ -36,7 +36,7 @@ describe('GameTable Component', () => {
       />
     );
     expect(screen.getByTestId('revolution-badge')).toBeInTheDocument();
-    expect(screen.getByTestId('revolution-badge')).toHaveTextContent('REVOLUTION');
+    expect(screen.getByTestId('revolution-badge')).toHaveTextContent('革命中');
   });
 
   it('カードが出ている時はカード一覧が表示されること', () => {

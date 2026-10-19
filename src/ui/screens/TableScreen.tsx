@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { DaifugoRuleState } from '../../core/rules/daifugo/types.js';
 import { DEFAULT_DAIFUGO_CONFIG, type DaifugoConfig } from '../../core/rules/daifugo/config.js';
@@ -12,10 +12,20 @@ import { ActionPanel } from '../components/ActionPanel.js';
 import { EventBanner } from '../components/EventBanner.js';
 import { ResultModal } from '../components/ResultModal.js';
 import { RulesModal } from '../components/RulesModal.js';
+import { SettingsModal } from '../components/SettingsModal.js';
+import {
+  playCardPlaySound,
+  playPassSound,
+  playEightCutSound,
+  playRevolutionSound,
+  isAudioMuted,
+  setAudioMuted,
+} from '../utils/sound.js';
 
 export interface TableScreenProps {
   state: SanitizedState<DaifugoRuleState>;
   myPlayerId: string;
+  isHost?: boolean;
   peerId?: string;
   disconnectedPlayerIds?: readonly string[];
   roomConfig?: DaifugoConfig;
@@ -24,6 +34,7 @@ export interface TableScreenProps {
   onPass: () => void;
   onPassCards?: (cardIds: string[]) => void;
   onDiscardCards?: (cardIds: string[]) => void;
+  onNextRound?: () => void;
   onRestart?: () => void;
   onLeaveRoom?: () => void;
 }
@@ -31,6 +42,7 @@ export interface TableScreenProps {
 export const TableScreen: React.FC<TableScreenProps> = ({
   state,
   myPlayerId,
+  isHost = false,
   peerId,
   disconnectedPlayerIds = [],
   roomConfig,
@@ -39,6 +51,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   onPass,
   onPassCards,
   onDiscardCards,
+  onNextRound,
   onRestart,
   onLeaveRoom,
 }) => {
@@ -47,7 +60,10 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   const { players, currentTurnPlayerId, isGameOver, winnerPlayerIds } = context;
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isMuted, setIsMuted] = useState(isAudioMuted());
+  const prevEventCountRef = useRef(recentEvents.length);
 
   // Active configuration (prefer ruleState.config as single source of truth during gameplay)
   const activeConfig = ruleState.config ?? roomConfig ?? DEFAULT_DAIFUGO_CONFIG;
@@ -74,8 +90,30 @@ export const TableScreen: React.FC<TableScreenProps> = ({
     isMyTurn,
   });
 
+  // Sound effects on incoming game events
+  useEffect(() => {
+    if (recentEvents.length > prevEventCountRef.current) {
+      const newEvents = recentEvents.slice(prevEventCountRef.current);
+      for (const event of newEvents) {
+        if (event.type === 'EIGHT_CUT') {
+          playEightCutSound();
+        } else if (event.type === 'REVOLUTION') {
+          playRevolutionSound();
+        }
+      }
+    }
+    prevEventCountRef.current = recentEvents.length;
+  }, [recentEvents]);
+
+  const handleToggleMute = () => {
+    const next = !isMuted;
+    setIsMuted(next);
+    setAudioMuted(next);
+  };
+
   const handlePlay = () => {
     if (canPlay) {
+      playCardPlaySound();
       onPlay(selectedCardIds);
       clearSelection();
     }
@@ -83,6 +121,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
 
   const handlePass = () => {
     if (canPass) {
+      playPassSound();
       onPass();
       clearSelection();
     }
@@ -128,6 +167,16 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         onClose={() => setIsRulesModalOpen(false)}
       />
 
+      {/* Settings Modal (Mobile & Desktop) */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        isMuted={isMuted}
+        onToggleMute={handleToggleMute}
+        onOpenRules={() => setIsRulesModalOpen(true)}
+        onLeaveRoom={onLeaveRoom}
+      />
+
       {/* Top Bar: Title & Utility Buttons */}
       <div className="w-full max-w-4xl flex items-center justify-between px-2 pt-1 pb-2">
         <div className="flex items-center space-x-2">
@@ -157,7 +206,53 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
-          <LanguageSelector />
+          {/* Mobile consolidated settings button */}
+          <button
+            type="button"
+            data-testid="settings-button"
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex sm:hidden items-center space-x-1 px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-bold transition active:scale-95 shadow-sm"
+          >
+            <span>⚙️</span>
+            <span>設定</span>
+          </button>
+
+          {/* Desktop full toolbar */}
+          <div className="hidden sm:flex items-center space-x-2">
+            <LanguageSelector />
+
+            <button
+              type="button"
+              data-testid="sound-toggle-button"
+              onClick={handleToggleMute}
+              aria-label={isMuted ? '音声ミュート解除' : '音声ミュート'}
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-emerald-600/60 font-bold transition active:scale-95 text-xs shadow-sm"
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </button>
+
+            <button
+              type="button"
+              data-testid="table-rules-button"
+              onClick={() => setIsRulesModalOpen(true)}
+              className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-black transition active:scale-95 flex items-center space-x-1 shadow-sm"
+            >
+              <span>📋</span>
+              <span>{t.app.rules}</span>
+            </button>
+
+            {onLeaveRoom && (
+              <button
+                type="button"
+                data-testid="leave-room-button"
+                onClick={onLeaveRoom}
+                className="px-2.5 py-1 text-xs rounded-full bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600/60 font-bold transition active:scale-95 flex items-center space-x-1 shadow-sm"
+              >
+                <span>🚪</span>
+                <span>退出</span>
+              </button>
+            )}
+          </div>
 
           {peerId && (
             <button
@@ -167,28 +262,6 @@ export const TableScreen: React.FC<TableScreenProps> = ({
             >
               <span>🔗</span>
               <span>{copiedLink ? t.app.copied : t.app.inviteLink}</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            data-testid="table-rules-button"
-            onClick={() => setIsRulesModalOpen(true)}
-            className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-black transition active:scale-95 flex items-center space-x-1 shadow-sm"
-          >
-            <span>📋</span>
-            <span>{t.app.rules}</span>
-          </button>
-
-          {onLeaveRoom && (
-            <button
-              type="button"
-              data-testid="leave-room-button"
-              onClick={onLeaveRoom}
-              className="px-2.5 py-1 text-xs rounded-full bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600/60 font-bold transition active:scale-95 flex items-center space-x-1 shadow-sm"
-            >
-              <span>🚪</span>
-              <span>退出</span>
             </button>
           )}
         </div>
@@ -265,6 +338,8 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         <ResultModal
           rankings={winnerPlayerIds}
           players={players}
+          isHost={isHost}
+          onNextRound={onNextRound}
           onRestart={onRestart}
         />
       )}

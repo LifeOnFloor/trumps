@@ -171,6 +171,43 @@ export class HostSession {
     }
   }
 
+  startNextRound(): void {
+    if (!this.gameRunner) {
+      throw new Error('No active or finished game to restart');
+    }
+
+    const currentContext = this.gameRunner.getContext();
+    const previousRankings =
+      currentContext.winnerPlayerIds.length > 0 ? currentContext.winnerPlayerIds : undefined;
+
+    // Retain chips balance from previous round
+    const chipMap = new Map(currentContext.players.map((p) => [p.id, p.chips]));
+    const runnerPlayers = this.players.map((p) => ({
+      id: p.id,
+      name: p.name,
+      chips: chipMap.get(p.id),
+    }));
+
+    // Create next round game runner with previous rankings (for tax exchange & round counting)
+    this.gameRunner = new GameRunner(this.plugin, runnerPlayers, this.currentConfig, {
+      previousRankings,
+    });
+
+    // Broadcast new round state to all connected players
+    for (const player of this.players) {
+      const sanitized = this.gameRunner.getSanitizedStateForPlayer(player.id);
+      if (player.peerId === this.transport.peerId) {
+        this.notifyStateChange(sanitized, [{ type: 'GAME_STARTED' }, { type: 'NEXT_ROUND' }]);
+      } else {
+        const msg: HostMessage = {
+          type: 'GAME_STARTED',
+          state: sanitized,
+        };
+        this.transport.send(player.peerId, msg);
+      }
+    }
+  }
+
   dispatchHostAction(action: DaifugoAction): void {
     this.handleDispatchAction(this.transport.peerId, this.hostPlayer.id, action);
   }

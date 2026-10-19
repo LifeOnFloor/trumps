@@ -17,11 +17,12 @@ export class GameRunner<TRuleConfig, TRuleState, TAction> {
 
   constructor(
     plugin: CardGamePlugin<TRuleConfig, TRuleState, TAction>,
-    players: readonly { id: string; name: string }[],
-    config?: Partial<TRuleConfig>
+    players: readonly { id: string; name: string; chips?: number }[],
+    config?: Partial<TRuleConfig>,
+    options?: unknown
   ) {
     this.plugin = plugin;
-    const initial = plugin.init(players, config);
+    const initial = plugin.init(players, config, options);
     this.context = initial.context;
     this.ruleState = initial.ruleState;
   }

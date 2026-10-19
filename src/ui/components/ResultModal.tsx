@@ -4,6 +4,8 @@ import type { SanitizedPlayerState } from '../../core/types/engine.js';
 export interface ResultModalProps {
   rankings: readonly string[];
   players: readonly SanitizedPlayerState[];
+  isHost?: boolean;
+  onNextRound?: () => void;
   onRestart?: () => void;
 }
 
@@ -12,6 +14,8 @@ const RANK_TITLES = ['大富豪', '富豪', '平民', '貧民', '大貧民'];
 export const ResultModal: React.FC<ResultModalProps> = ({
   rankings,
   players,
+  isHost = false,
+  onNextRound,
   onRestart,
 }) => {
   const playerMap = new Map(players.map((p) => [p.id, p]));
@@ -19,7 +23,7 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   return (
     <div
       data-testid="result-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in"
     >
       <div className="bg-emerald-950/95 border border-yellow-500/50 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
         <div className="text-3xl mb-1">🏆</div>
@@ -56,15 +60,38 @@ export const ResultModal: React.FC<ResultModalProps> = ({
           })}
         </div>
 
-        {onRestart && (
-          <button
-            type="button"
-            onClick={onRestart}
-            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black shadow-lg shadow-yellow-500/30 transition active:scale-95"
-          >
-            もう一度遊ぶ
-          </button>
-        )}
+        <div className="space-y-2.5">
+          {onNextRound && (
+            isHost ? (
+              <button
+                type="button"
+                data-testid="next-round-button"
+                onClick={onNextRound}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black shadow-lg shadow-yellow-500/30 transition active:scale-95 text-sm"
+              >
+                👑 次のゲーム（再戦）を開始
+              </button>
+            ) : (
+              <div
+                data-testid="waiting-next-round"
+                className="text-xs text-yellow-300 font-bold bg-emerald-900/80 p-3 rounded-2xl border border-emerald-700/60"
+              >
+                ホストが次のゲームを開始するのを待っています...
+              </div>
+            )
+          )}
+
+          {onRestart && (
+            <button
+              type="button"
+              data-testid="restart-lobby-button"
+              onClick={onRestart}
+              className="w-full py-2.5 rounded-2xl bg-emerald-900/70 hover:bg-emerald-800 text-emerald-200 text-xs font-bold transition active:scale-95"
+            >
+              ロビーへ戻る
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

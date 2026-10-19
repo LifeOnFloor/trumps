@@ -218,9 +218,12 @@ export function isValidPlay(
 
   // Sequence lock check
   if (table.isSequenceLocked && table.requiredNextRank !== null) {
-    const currentOrder = getMeldOrder(meld);
-    if (currentOrder !== table.requiredNextRank) {
-      return { valid: false, reason: `Sequence locked to rank order ${table.requiredNextRank}` };
+    const isPureJoker = meld.cards.every((c) => c.isJoker);
+    if (!isPureJoker) {
+      const currentOrder = getMeldOrder(meld);
+      if (currentOrder !== table.requiredNextRank) {
+        return { valid: false, reason: `Sequence locked to rank order ${table.requiredNextRank}` };
+      }
     }
   }
 
@@ -243,23 +246,26 @@ export function checkSequenceLock(
   if (!config.sequenceLock && config.suitLock !== 'geki') {
     return { isSequenceLocked: false, requiredNextRank: null };
   }
-  const currentOrder = getMeldOrder(currentMeld);
+  const nextStep = isRevolution ? -1 : 1;
+  const lastOrder = lastPlay ? getMeldOrder(lastPlay) : null;
+  const rawOrder = getMeldOrder(currentMeld);
+  // Pure joker substitutes for the expected next rank
+  const currentOrder = rawOrder ?? (lastOrder !== null ? lastOrder + nextStep : null);
   if (currentOrder === null) return { isSequenceLocked: existingLock, requiredNextRank: null };
 
-  const nextStep = isRevolution ? -1 : 1;
   const nextRequired = currentOrder + nextStep;
+  const isWithinValidRanks = nextRequired >= 3 && nextRequired <= 15;
 
   if (existingLock) {
-    return { isSequenceLocked: true, requiredNextRank: nextRequired };
+    return { isSequenceLocked: true, requiredNextRank: isWithinValidRanks ? nextRequired : null };
   }
 
   if (!lastPlay) {
     return { isSequenceLocked: false, requiredNextRank: null };
   }
 
-  const lastOrder = getMeldOrder(lastPlay);
   if (lastOrder !== null && currentOrder === lastOrder + nextStep) {
-    return { isSequenceLocked: true, requiredNextRank: nextRequired };
+    return { isSequenceLocked: true, requiredNextRank: isWithinValidRanks ? nextRequired : null };
   }
 
   return { isSequenceLocked: false, requiredNextRank: null };

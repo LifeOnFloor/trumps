@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import type { Card } from '../../core/types/card.js';
 import { CardView } from './CardView.js';
+import { playTapSound } from '../utils/sound.js';
 
 export interface PlayerHandProps {
   cards: readonly Card[];
@@ -18,6 +19,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
   chips,
 }) => {
   const selectedSet = new Set(selectedCardIds);
+  const touchedCardIdsRef = useRef<Set<string>>(new Set());
 
   // Sort hand: Jokers last, then rank (3 -> 13 -> 1 -> 2)
   const sortedCards = [...cards].sort((a, b) => {
@@ -28,6 +30,35 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
     if (rankValA !== rankValB) return rankValA - rankValB;
     return a.suit.localeCompare(b.suit);
   });
+
+  const handleToggle = (cardId: string) => {
+    if (disabled) return;
+    playTapSound();
+    onToggleSelect(cardId);
+  };
+
+  const handleTouchStart = () => {
+    touchedCardIdsRef.current.clear();
+  };
+
+  const handleTouchEnd = () => {
+    touchedCardIdsRef.current.clear();
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    const touch = e.touches[0];
+    if (!touch || typeof document === 'undefined' || !document.elementFromPoint) return;
+    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cardEl = targetElement?.closest?.('[data-card-id]');
+    if (cardEl) {
+      const cardId = cardEl.getAttribute('data-card-id');
+      if (cardId && !touchedCardIdsRef.current.has(cardId)) {
+        touchedCardIdsRef.current.add(cardId);
+        handleToggle(cardId);
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col items-center w-full max-w-4xl">
@@ -61,18 +92,35 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
 
       <div
         data-testid="player-hand"
-        className="flex items-end justify-center overflow-x-auto py-3 px-2 w-full -space-x-3 sm:-space-x-4 select-none scrollbar-thin"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="w-full overflow-x-auto py-3 px-4 sm:px-6 select-none scrollbar-thin touch-pan-x flex items-end"
       >
-        {sortedCards.map((card) => (
-          <div key={card.id} className="flex-shrink-0 transition-transform duration-150">
-            <CardView
-              card={card}
-              isSelected={selectedSet.has(card.id)}
-              onClick={() => onToggleSelect(card.id)}
-              disabled={disabled}
-            />
-          </div>
-        ))}
+        <div
+          className={`flex items-end m-auto transition-all ${
+            sortedCards.length > 12
+              ? '-space-x-5 sm:-space-x-5'
+              : sortedCards.length > 8
+              ? '-space-x-4 sm:-space-x-4'
+              : '-space-x-3 sm:-space-x-4'
+          }`}
+        >
+          {sortedCards.map((card) => (
+            <div
+              key={card.id}
+              data-card-id={card.id}
+              className="flex-shrink-0 transition-transform duration-150"
+            >
+              <CardView
+                card={card}
+                isSelected={selectedSet.has(card.id)}
+                onClick={() => handleToggle(card.id)}
+                disabled={disabled}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

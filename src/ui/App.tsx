@@ -21,6 +21,7 @@ const MainAppContent: React.FC = () => {
     joinAsClient,
     updateConfig,
     startGame,
+    startNextRound,
     leaveRoom,
     dispatchPlay,
     dispatchPass,
@@ -80,6 +81,7 @@ const MainAppContent: React.FC = () => {
 
       <TableScreen
         state={state}
+        isHost={isHost}
         myPlayerId={myPlayerId}
         peerId={peerId}
         disconnectedPlayerIds={disconnectedPlayerIds}
@@ -89,6 +91,7 @@ const MainAppContent: React.FC = () => {
         onPass={dispatchPass}
         onPassCards={dispatchPassCards}
         onDiscardCards={dispatchDiscardCards}
+        onNextRound={startNextRound}
         onRestart={() => window.location.reload()}
         onLeaveRoom={leaveRoom}
       />

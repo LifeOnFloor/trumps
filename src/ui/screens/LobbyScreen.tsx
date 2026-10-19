@@ -7,6 +7,7 @@ import { LanguageSelector } from '../components/LanguageSelector.js';
 import { GameSelector } from '../components/GameSelector.js';
 import { RulePresets } from '../components/RulePresets.js';
 import { RulesModal } from '../components/RulesModal.js';
+import { isAudioMuted, setAudioMuted } from '../utils/sound.js';
 
 export interface LobbyScreenProps {
   isHost: boolean;
@@ -43,6 +44,13 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   const [targetPeerId, setTargetPeerId] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(isAudioMuted());
+
+  const handleToggleMute = () => {
+    const next = !isMuted;
+    setIsMuted(next);
+    setAudioMuted(next);
+  };
 
   // Config settings initialized with roomConfig or default
   const [config, setConfig] = useState<DaifugoConfig>(roomConfig ?? DEFAULT_DAIFUGO_CONFIG);
@@ -179,6 +187,15 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
           <div className="flex items-center space-x-2">
             <LanguageSelector />
+            <button
+              type="button"
+              data-testid="sound-toggle-button"
+              onClick={handleToggleMute}
+              aria-label={isMuted ? '音声ミュート解除' : '音声ミュート'}
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-emerald-600/60 font-bold transition active:scale-95 text-xs shadow-sm"
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </button>
             <button
               type="button"
               data-testid="open-rules-button"

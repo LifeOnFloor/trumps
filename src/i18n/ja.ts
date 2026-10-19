@@ -65,7 +65,7 @@ export const ja: TranslationDictionary = {
     play: '出す',
     pass: 'パス',
     tableCleared: '場が流れています',
-    revolution: 'REVOLUTION',
+    revolution: '革命中',
     suitLock: '縛り:',
     handCount: '手札:',
     selectedCount: '枚選択中',

@@ -171,6 +171,16 @@ export function useGameSession() {
     }
   }, [roomConfig]);
 
+  const startNextRound = useCallback(() => {
+    if (hostSessionRef.current) {
+      try {
+        hostSessionRef.current.startNextRound();
+      } catch (err: any) {
+        setError(err.message);
+      }
+    }
+  }, []);
+
   const dispatchPlay = useCallback((cardIds: string[]) => {
     if (hostSessionRef.current) {
       hostSessionRef.current.dispatchHostAction({ type: 'PLAY', cardIds });
@@ -259,6 +269,7 @@ export function useGameSession() {
     joinAsClient,
     updateConfig,
     startGame,
+    startNextRound,
     leaveRoom,
     dispatchPlay,
     dispatchPass,
