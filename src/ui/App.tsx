@@ -21,6 +21,7 @@ const MainAppContent: React.FC = () => {
     joinAsClient,
     updateConfig,
     startGame,
+    leaveRoom,
     dispatchPlay,
     dispatchPass,
     dispatchPassCards,
@@ -40,6 +41,7 @@ const MainAppContent: React.FC = () => {
         onJoinClient={joinAsClient}
         onUpdateConfig={updateConfig}
         onStartGame={startGame}
+        onLeaveRoom={leaveRoom}
       />
     );
   }
@@ -66,7 +68,7 @@ const MainAppContent: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => window.location.reload()}
+                onClick={() => leaveRoom()}
                 className="w-full py-2.5 rounded-2xl bg-emerald-900 hover:bg-emerald-800 text-emerald-200 text-xs font-bold transition"
               >
                 ロビーへ戻る
@@ -88,6 +90,7 @@ const MainAppContent: React.FC = () => {
         onPassCards={dispatchPassCards}
         onDiscardCards={dispatchDiscardCards}
         onRestart={() => window.location.reload()}
+        onLeaveRoom={leaveRoom}
       />
     </>
   );

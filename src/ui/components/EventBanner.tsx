@@ -3,9 +3,10 @@ import type { GameEvent } from '../../core/types/engine.js';
 
 export interface EventBannerProps {
   events: readonly GameEvent[];
+  players?: readonly { id: string; name: string }[];
 }
 
-export const EventBanner: React.FC<EventBannerProps> = ({ events }) => {
+export const EventBanner: React.FC<EventBannerProps> = ({ events, players }) => {
   const [activeMessage, setActiveMessage] = useState<{ text: string; isAlert?: boolean } | null>(null);
 
   useEffect(() => {
@@ -57,7 +58,12 @@ export const EventBanner: React.FC<EventBannerProps> = ({ events }) => {
         setActiveMessage({ text: `🎉 ${name} さんが参加しました！` });
         break;
       } else if (event.type === 'PLAYER_DISCONNECTED') {
-        setActiveMessage({ text: '⚠️ プレイヤーが切断しました', isAlert: true });
+        const payload = event.payload as any;
+        const resolvedName =
+          payload?.playerName ??
+          players?.find((p) => p.id === payload?.playerId)?.name;
+        const nameText = resolvedName ? `${resolvedName} さん` : 'プレイヤー';
+        setActiveMessage({ text: `⚠️ ${nameText}が切断・離脱しました`, isAlert: true });
         break;
       }
     }

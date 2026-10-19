@@ -8,11 +8,13 @@ export class PeerJsTransport implements ITransport {
   private receiveHandlers: ((fromPeerId: string, data: unknown) => void)[] = [];
   private connectHandlers: ((peerId: string) => void)[] = [];
   private disconnectHandlers: ((peerId: string) => void)[] = [];
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(peer: Peer) {
     this.peer = peer;
     this.peerId = peer.id;
     this.setupIncomingConnectionHandler();
+    this.startHeartbeat();
   }
 
   static async create(peerId?: string): Promise<PeerJsTransport> {
@@ -72,11 +74,30 @@ export class PeerJsTransport implements ITransport {
   }
 
   close(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
     for (const conn of this.connections.values()) {
       conn.close();
     }
     this.connections.clear();
     this.peer.destroy();
+  }
+
+  private startHeartbeat(): void {
+    if (this.heartbeatTimer) return;
+    this.heartbeatTimer = setInterval(() => {
+      for (const conn of this.connections.values()) {
+        if (conn.open) {
+          try {
+            conn.send({ __trumps_hb: 'ping' });
+          } catch {
+            // ignore send failure; conn.on('close') handles cleanup
+          }
+        }
+      }
+    }, 3000);
   }
 
   private setupIncomingConnectionHandler(): void {
@@ -91,8 +112,19 @@ export class PeerJsTransport implements ITransport {
     const peerId = conn.peer;
     this.connections.set(peerId, conn);
 
-    conn.on('data', (data) => {
-      this.receiveHandlers.forEach((h) => h(peerId, data));
+    conn.on('data', (rawData: unknown) => {
+      if (rawData && typeof rawData === 'object' && '__trumps_hb' in rawData) {
+        const hb = (rawData as { __trumps_hb: string }).__trumps_hb;
+        if (hb === 'ping') {
+          try {
+            conn.send({ __trumps_hb: 'pong' });
+          } catch {
+            // ignore
+          }
+        }
+        return;
+      }
+      this.receiveHandlers.forEach((h) => h(peerId, rawData));
     });
 
     conn.on('close', () => {
@@ -100,9 +132,10 @@ export class PeerJsTransport implements ITransport {
       this.disconnectHandlers.forEach((h) => h(peerId));
     });
 
-    conn.on('error', () => {
-      this.connections.delete(peerId);
-      this.disconnectHandlers.forEach((h) => h(peerId));
+    conn.on('error', (err) => {
+      // Avoid immediate destructive disconnect on transient warnings/errors;
+      // rely on close event or socket termination for orderly cleanup.
+      console.warn(`DataConnection error with ${peerId}:`, err);
     });
 
     this.connectHandlers.forEach((h) => h(peerId));

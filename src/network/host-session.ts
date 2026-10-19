@@ -44,6 +44,7 @@ export class HostSession {
   private gameRunner: GameRunner<DaifugoConfig, DaifugoRuleState, DaifugoAction> | null = null;
   private stateChangeListeners: ((state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]) => void)[] = [];
   private playersChangeListeners: ((players: readonly NetworkPlayer[]) => void)[] = [];
+  private playerDisconnectedListeners: ((playerId: string, playerName: string) => void)[] = [];
 
   constructor(
     transport: ITransport,
@@ -70,6 +71,12 @@ export class HostSession {
     });
 
     this.setupTransportHandlers();
+  }
+
+  leaveRoom(): void {
+    this.transport.close();
+    this.players = [];
+    this.gameRunner = null;
   }
 
   getConfig(): DaifugoConfig {
@@ -123,6 +130,13 @@ export class HostSession {
     this.playersChangeListeners.push(listener);
     return () => {
       this.playersChangeListeners = this.playersChangeListeners.filter((l) => l !== listener);
+    };
+  }
+
+  onPlayerDisconnected(listener: (playerId: string, playerName: string) => void): () => void {
+    this.playerDisconnectedListeners.push(listener);
+    return () => {
+      this.playerDisconnectedListeners = this.playerDisconnectedListeners.filter((l) => l !== listener);
     };
   }
 
@@ -278,6 +292,7 @@ export class HostSession {
     if (!disconnected) return;
 
     this.notifyPlayersChange();
+    this.playerDisconnectedListeners.forEach((l) => l(disconnected.id, disconnected.name));
 
     const msg: HostMessage = {
       type: 'PLAYER_DISCONNECTED',
@@ -304,7 +319,10 @@ export class HostSession {
               if (player.peerId === this.transport.peerId) {
                 this.notifyStateChange(sanitized, [
                   ...sanitizedEvents,
-                  { type: 'PLAYER_DISCONNECTED', payload: { playerId: disconnected.id } },
+                  {
+                    type: 'PLAYER_DISCONNECTED',
+                    payload: { playerId: disconnected.id, playerName: disconnected.name },
+                  },
                 ]);
               } else {
                 this.transport.send(player.peerId, {
@@ -312,7 +330,10 @@ export class HostSession {
                   state: sanitized,
                   events: [
                     ...sanitizedEvents,
-                    { type: 'PLAYER_DISCONNECTED', payload: { playerId: disconnected.id } },
+                    {
+                      type: 'PLAYER_DISCONNECTED',
+                      payload: { playerId: disconnected.id, playerName: disconnected.name },
+                    },
                   ],
                 });
               }

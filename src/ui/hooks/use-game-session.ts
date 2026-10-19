@@ -65,6 +65,11 @@ export function useGameSession() {
         session.onPlayersChange((updatedPlayers) => {
           setPlayers([...updatedPlayers]);
         });
+
+        session.onPlayerDisconnected((playerId, playerName) => {
+          setDisconnectedPlayerIds((prev) => [...new Set([...prev, playerId])]);
+          setRecentEvents([{ type: 'PLAYER_DISCONNECTED', payload: { playerId, playerName } }]);
+        });
       } catch (err: any) {
         setError(err.message ?? 'Failed to initialize host');
         setIsHost(false);
@@ -114,7 +119,13 @@ export function useGameSession() {
 
       session.onPlayerDisconnected((playerId) => {
         setDisconnectedPlayerIds((prev) => [...new Set([...prev, playerId])]);
-        setRecentEvents([{ type: 'PLAYER_DISCONNECTED', payload: { playerId } }]);
+        const targetPlayer = session.getPlayers().find((p) => p.id === playerId);
+        setRecentEvents([
+          {
+            type: 'PLAYER_DISCONNECTED',
+            payload: { playerId, playerName: targetPlayer?.name },
+          },
+        ]);
       });
 
       session.onHostDisconnected(() => {
@@ -181,6 +192,27 @@ export function useGameSession() {
     }
   }, []);
 
+  const leaveRoom = useCallback(() => {
+    if (hostSessionRef.current) {
+      hostSessionRef.current.leaveRoom();
+      hostSessionRef.current = null;
+    }
+    if (clientSessionRef.current) {
+      clientSessionRef.current.leaveRoom();
+      clientSessionRef.current = null;
+    }
+    setIsHost(false);
+    setIsConnecting(false);
+    setIsHostDisconnected(false);
+    setPeerId('');
+    setMyPlayerId('');
+    setPlayers([]);
+    setDisconnectedPlayerIds([]);
+    setState(null);
+    setRecentEvents([]);
+    setError(null);
+  }, []);
+
   return {
     isHost,
     isConnecting,
@@ -197,6 +229,7 @@ export function useGameSession() {
     joinAsClient,
     updateConfig,
     startGame,
+    leaveRoom,
     dispatchPlay,
     dispatchPass,
     dispatchPassCards,

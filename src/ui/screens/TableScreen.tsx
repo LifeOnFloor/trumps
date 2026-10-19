@@ -25,6 +25,7 @@ export interface TableScreenProps {
   onPassCards?: (cardIds: string[]) => void;
   onDiscardCards?: (cardIds: string[]) => void;
   onRestart?: () => void;
+  onLeaveRoom?: () => void;
 }
 
 export const TableScreen: React.FC<TableScreenProps> = ({
@@ -39,6 +40,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   onPassCards,
   onDiscardCards,
   onRestart,
+  onLeaveRoom,
 }) => {
   const { t } = useTranslation();
   const { context, ruleState } = state;
@@ -52,7 +54,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
 
   const myPlayer = players.find((p) => p.id === myPlayerId);
   const myHand = myPlayer?.hand ?? [];
-  const opponents = players.filter((p) => p.id !== myPlayerId);
+  const opponents = players.filter((p) => p.id !== myPlayerId && !disconnectedPlayerIds.includes(p.id));
 
   const isMyTurn = currentTurnPlayerId === myPlayerId;
   const isEffectiveRevolution = ruleState.isRevolution !== ruleState.isElevenBack;
@@ -116,7 +118,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
   return (
     <div className="relative flex flex-col justify-between items-center min-h-screen p-2 sm:p-4 bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white overflow-hidden select-none">
       {/* Event banner toast */}
-      <EventBanner events={recentEvents} />
+      <EventBanner events={recentEvents} players={players} />
 
       {/* Rules Modal */}
       <RulesModal
@@ -165,6 +167,18 @@ export const TableScreen: React.FC<TableScreenProps> = ({
             <span>📋</span>
             <span>{t.app.rules}</span>
           </button>
+
+          {onLeaveRoom && (
+            <button
+              type="button"
+              data-testid="leave-room-button"
+              onClick={onLeaveRoom}
+              className="px-2.5 py-1 text-xs rounded-full bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600/60 font-bold transition active:scale-95 flex items-center space-x-1 shadow-sm"
+            >
+              <span>🚪</span>
+              <span>退出</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -183,9 +197,9 @@ export const TableScreen: React.FC<TableScreenProps> = ({
       {/* Center Table Area */}
       <div className="w-full flex flex-col items-center justify-center my-auto px-2">
         <GameTable
-          lastPlay={ruleState.table.lastPlay}
+          lastPlay={ruleState.table?.lastPlay ?? null}
           isRevolution={isEffectiveRevolution}
-          lockedSuits={ruleState.table.lockedSuits}
+          lockedSuits={ruleState.table?.lockedSuits ?? []}
         />
 
         {/* Turn prompt indicator */}

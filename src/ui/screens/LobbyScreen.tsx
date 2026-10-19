@@ -18,6 +18,7 @@ export interface LobbyScreenProps {
   onJoinClient: (hostPeerId: string, playerName: string) => void;
   onUpdateConfig?: (config: DaifugoConfig) => void;
   onStartGame: (config?: DaifugoConfig) => void;
+  onLeaveRoom?: () => void;
 }
 
 export const LobbyScreen: React.FC<LobbyScreenProps> = ({
@@ -31,6 +32,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onJoinClient,
   onUpdateConfig,
   onStartGame,
+  onLeaveRoom,
 }) => {
   const { t } = useTranslation();
   const [mode, setMode] = useState<'select' | 'host' | 'client'>('select');
@@ -140,6 +142,20 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               <span>📋</span>
               <span>{t.app.rules}</span>
             </button>
+            {(peerId || mode !== 'select') && onLeaveRoom && (
+              <button
+                type="button"
+                data-testid="leave-room-button"
+                onClick={() => {
+                  setMode('select');
+                  onLeaveRoom();
+                }}
+                className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600/60 text-xs font-black transition active:scale-95 shadow-sm"
+              >
+                <span>🚪</span>
+                <span>退出</span>
+              </button>
+            )}
           </div>
         </div>
 

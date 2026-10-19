@@ -48,8 +48,8 @@ export function useCardSelection({
 
   const canPass = useMemo(() => {
     // Can only pass when it's your turn and table is not empty
-    return isMyTurn && table.lastPlay !== null;
-  }, [isMyTurn, table.lastPlay]);
+    return isMyTurn && Boolean(table?.lastPlay);
+  }, [isMyTurn, table?.lastPlay]);
 
   return {
     selectedCardIds,
