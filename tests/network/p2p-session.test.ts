@@ -230,7 +230,7 @@ describe('P2P Multi-player Session (Host-Client with MemoryTransport)', () => {
     expect(hostSession.getPlayers()).toHaveLength(2);
   });
 
-  it('10. クライアント切断時の安全な継続: ゲーム中にクライアントが切断した場合、脱落扱いとなり残りで進行できること', async () => {
+  it('10. クライアント切断時の安全な終了: 3人ゲーム中にクライアントが切断した場合、人数不足でゲームが安全終了すること', async () => {
     await client1Session.joinRoom('host_peer');
     await client2Session.joinRoom('host_peer');
     hostSession.startGame();
@@ -246,9 +246,8 @@ describe('P2P Multi-player Session (Host-Client with MemoryTransport)', () => {
     const c2InGame = updatedContext.players.find((p) => p.id === 'c2_p');
     expect(c2InGame?.isFinished).toBe(true);
 
-    // Remaining active players should be 2
-    const remainingActive = updatedContext.players.filter((p) => !p.isFinished);
-    expect(remainingActive).toHaveLength(2);
+    // Since remaining active players are 2 (< minPlayers 3), game ends safely
+    expect(updatedContext.isGameOver).toBe(true);
   });
 
   it('11. ホスト切断ハンドリング: ホストが切断した場合、クライアントが onHostDisconnected を検知できること', async () => {

@@ -65,6 +65,11 @@ export const EventBanner: React.FC<EventBannerProps> = ({ events, players }) => 
         const nameText = resolvedName ? `${resolvedName} さん` : 'プレイヤー';
         setActiveMessage({ text: `⚠️ ${nameText}が切断・離脱しました`, isAlert: true });
         break;
+      } else if (event.type === 'GAME_OVER_INSUFFICIENT_PLAYERS') {
+        const payload = event.payload as any;
+        const msg = payload?.message ?? '人数不足のためゲームを終了しました';
+        setActiveMessage({ text: `⚠️ ${msg}`, isAlert: true });
+        break;
       }
     }
 

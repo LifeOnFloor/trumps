@@ -54,7 +54,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
 
   const myPlayer = players.find((p) => p.id === myPlayerId);
   const myHand = myPlayer?.hand ?? [];
-  const opponents = players.filter((p) => p.id !== myPlayerId && !disconnectedPlayerIds.includes(p.id));
+  const opponents = players.filter((p) => p.id !== myPlayerId);
 
   const isMyTurn = currentTurnPlayerId === myPlayerId;
   const isEffectiveRevolution = ruleState.isRevolution !== ruleState.isElevenBack;

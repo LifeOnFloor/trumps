@@ -42,7 +42,7 @@ describe('Disconnect and Leave Room UI', () => {
     },
   };
 
-  it('excludes disconnected players from opponent seats in TableScreen', () => {
+  it('displays disconnected badge on opponent seat in TableScreen when player is in disconnectedPlayerIds', () => {
     const { rerender } = render(
       <I18nProvider>
         <TableScreen
@@ -56,9 +56,10 @@ describe('Disconnect and Leave Room UI', () => {
       </I18nProvider>
     );
 
-    // Initially both opponents are visible
+    // Initially both opponents are visible and not disconnected
     expect(screen.getByText('Player 2')).toBeDefined();
     expect(screen.getByText('Player 3')).toBeDefined();
+    expect(screen.queryByTestId('disconnected-badge-player-2')).toBeNull();
 
     // Now player-2 is disconnected
     rerender(
@@ -74,8 +75,9 @@ describe('Disconnect and Leave Room UI', () => {
       </I18nProvider>
     );
 
-    // Player 2 should be excluded from view, while Player 3 remains
-    expect(screen.queryByText('Player 2')).toBeNull();
+    // Player 2 remains visible with disconnected badge
+    expect(screen.getByText('Player 2')).toBeDefined();
+    expect(screen.getByTestId('disconnected-badge-player-2')).toBeDefined();
     expect(screen.getByText('Player 3')).toBeDefined();
   });
 
@@ -136,5 +138,20 @@ describe('Disconnect and Leave Room UI', () => {
     );
 
     expect(screen.getByText(/Alice さんが切断・離脱しました/)).toBeDefined();
+  });
+
+  it('displays toast when GAME_OVER_INSUFFICIENT_PLAYERS occurs in EventBanner', () => {
+    render(
+      <EventBanner
+        events={[
+          {
+            type: 'GAME_OVER_INSUFFICIENT_PLAYERS',
+            payload: { message: '人数不足のためゲームを終了しました' },
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText(/人数不足のためゲームを終了しました/)).toBeDefined();
   });
 });

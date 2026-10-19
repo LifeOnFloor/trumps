@@ -9,6 +9,7 @@ export class PeerJsTransport implements ITransport {
   private connectHandlers: ((peerId: string) => void)[] = [];
   private disconnectHandlers: ((peerId: string) => void)[] = [];
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private lastPongTimes = new Map<string, number>();
 
   constructor(peer: Peer) {
     this.peer = peer;
@@ -78,6 +79,7 @@ export class PeerJsTransport implements ITransport {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
+    this.lastPongTimes.clear();
     for (const conn of this.connections.values()) {
       conn.close();
     }
@@ -88,13 +90,28 @@ export class PeerJsTransport implements ITransport {
   private startHeartbeat(): void {
     if (this.heartbeatTimer) return;
     this.heartbeatTimer = setInterval(() => {
-      for (const conn of this.connections.values()) {
-        if (conn.open) {
+      const now = Date.now();
+      for (const [peerId, conn] of [...this.connections.entries()]) {
+        if (!conn.open) continue;
+
+        const lastActive = this.lastPongTimes.get(peerId) ?? now;
+        if (now - lastActive >= 6000) {
+          // Dead peer detected: 6 seconds with no pong or response
+          this.connections.delete(peerId);
+          this.lastPongTimes.delete(peerId);
           try {
-            conn.send({ __trumps_hb: 'ping' });
+            conn.close();
           } catch {
-            // ignore send failure; conn.on('close') handles cleanup
+            // ignore
           }
+          this.disconnectHandlers.forEach((h) => h(peerId));
+          continue;
+        }
+
+        try {
+          conn.send({ __trumps_hb: 'ping' });
+        } catch {
+          // ignore send failure; conn.on('close') or dead peer check handles cleanup
         }
       }
     }, 3000);
@@ -111,8 +128,11 @@ export class PeerJsTransport implements ITransport {
   private trackConnection(conn: DataConnection): void {
     const peerId = conn.peer;
     this.connections.set(peerId, conn);
+    this.lastPongTimes.set(peerId, Date.now());
 
     conn.on('data', (rawData: unknown) => {
+      this.lastPongTimes.set(peerId, Date.now());
+
       if (rawData && typeof rawData === 'object' && '__trumps_hb' in rawData) {
         const hb = (rawData as { __trumps_hb: string }).__trumps_hb;
         if (hb === 'ping') {
@@ -129,12 +149,11 @@ export class PeerJsTransport implements ITransport {
 
     conn.on('close', () => {
       this.connections.delete(peerId);
+      this.lastPongTimes.delete(peerId);
       this.disconnectHandlers.forEach((h) => h(peerId));
     });
 
     conn.on('error', (err) => {
-      // Avoid immediate destructive disconnect on transient warnings/errors;
-      // rely on close event or socket termination for orderly cleanup.
       console.warn(`DataConnection error with ${peerId}:`, err);
     });
 

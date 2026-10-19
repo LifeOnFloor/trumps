@@ -366,11 +366,12 @@ describe('DaifugoPlugin', () => {
   });
 
   describe('8. 途中離脱・降伏（SURRENDER）', () => {
-    it('プレイヤーがSURRENDERを実行すると即座に脱落し、手番が次のプレイヤーへ安全に移行すること', () => {
+    it('4人ゲームでプレイヤーがSURRENDERを実行すると即座に脱落し、手番が次のプレイヤーへ安全に移行すること', () => {
       const { plugin, context, ruleState } = createCustomGame({
         p1: ['S_3', 'H_3'],
         p2: ['S_4'],
         p3: ['S_5'],
+        p4: ['S_6'],
       });
 
       // p1 surrenders during their turn
@@ -383,25 +384,22 @@ describe('DaifugoPlugin', () => {
       expect(res.nextRuleState.foulPlayerIds).toContain('p1');
       expect(res.events.some((e) => e.type === 'PLAYER_SURRENDERED')).toBe(true);
 
-      // Turn moves to p2
+      // Remaining 3 players >= minPlayers, so game continues and turn moves to p2
+      expect(res.nextContext.isGameOver).toBe(false);
       expect(res.nextContext.currentTurnPlayerId).toBe('p2');
     });
 
-    it('3人中2人が脱落または上がった場合、即座にGAME_OVERとなること', () => {
+    it('3人ゲームで1人が脱落した場合、残り2人で大富豪が成立しないため即座にGAME_OVER（人数不足終了）となること', () => {
       const { plugin, context, ruleState } = createCustomGame({
         p1: ['S_3'],
         p2: ['S_4'],
         p3: ['S_5'],
       });
 
-      // p1 surrenders
+      // p1 surrenders -> only 2 players left (< minPlayers 3) -> Game Over!
       const res1 = plugin.execute(context, ruleState, 'p1', { type: 'SURRENDER' });
-      expect(res1.nextContext.isGameOver).toBe(false);
-
-      // p2 surrenders -> only p3 left -> Game Over!
-      const res2 = plugin.execute(res1.nextContext, res1.nextRuleState, 'p2', { type: 'SURRENDER' });
-      expect(res2.nextContext.isGameOver).toBe(true);
-      expect(res2.nextContext.winnerPlayerIds[0]).toBe('p3');
+      expect(res1.nextContext.isGameOver).toBe(true);
+      expect(res1.events.some((e) => e.type === 'GAME_OVER_INSUFFICIENT_PLAYERS')).toBe(true);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from '../../core/rules/daifugo/config.js';
@@ -211,6 +211,25 @@ export function useGameSession() {
     setState(null);
     setRecentEvents([]);
     setError(null);
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (hostSessionRef.current) {
+        hostSessionRef.current.leaveRoom();
+      }
+      if (clientSessionRef.current) {
+        clientSessionRef.current.leaveRoom();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
+    };
   }, []);
 
   return {

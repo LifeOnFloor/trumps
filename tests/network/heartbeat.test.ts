@@ -73,4 +73,44 @@ describe('PeerJsTransport Heartbeat', () => {
     transport.close();
     expect(mockPeer.destroy).toHaveBeenCalled();
   });
+
+  it('triggers onDisconnect when a peer fails to respond to pings for 6 seconds (dead peer detection)', () => {
+    const mockConn: any = {
+      peer: 'peer-2',
+      open: true,
+      send: vi.fn(),
+      on: vi.fn(),
+      close: vi.fn(),
+    };
+
+    const mockPeer: any = {
+      id: 'peer-1',
+      on: vi.fn(),
+      destroy: vi.fn(),
+    };
+
+    const transport = new PeerJsTransport(mockPeer);
+    const connectionHandler = mockPeer.on.mock.calls.find((call: any[]) => call[0] === 'connection')?.[1];
+    connectionHandler(mockConn);
+
+    const openHandler = mockConn.on.mock.calls.find((call: any[]) => call[0] === 'open')?.[1];
+    openHandler();
+
+    let disconnectedPeer: string | null = null;
+    transport.onDisconnect((peerId) => {
+      disconnectedPeer = peerId;
+    });
+
+    // Advance 3 seconds: ping sent, but peer does not reply
+    vi.advanceTimersByTime(3000);
+    expect(mockConn.send).toHaveBeenCalledWith({ __trumps_hb: 'ping' });
+    expect(disconnectedPeer).toBeNull();
+
+    // Advance another 3 seconds (total 6s >= threshold): should detect dead peer, close connection and trigger onDisconnect
+    vi.advanceTimersByTime(3100);
+    expect(mockConn.close).toHaveBeenCalled();
+    expect(disconnectedPeer).toBe('peer-2');
+
+    transport.close();
+  });
 });

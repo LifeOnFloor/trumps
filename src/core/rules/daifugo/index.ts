@@ -557,17 +557,35 @@ export class DaifugoPlugin
     const activeRemaining = nextPlayers.filter((p) => !p.isFinished);
     let isGameOver = context.isGameOver;
 
-    if (activeRemaining.length <= 1) {
+    const isInsufficientPlayers =
+      action.type === 'SURRENDER' && activeRemaining.length < this.minPlayers;
+
+    if (activeRemaining.length <= 1 || isInsufficientPlayers) {
       isGameOver = true;
-      if (activeRemaining.length === 1) {
-        const lastPlayer = activeRemaining[0]!;
-        nextRankings.push(lastPlayer.id);
-        nextPlayers = nextPlayers.map((p) =>
-          p.id === lastPlayer.id
-            ? { ...p, isFinished: true, rankPosition: nextRankings.length }
-            : p
-        );
+      if (isInsufficientPlayers) {
+        events.push({
+          type: 'GAME_OVER_INSUFFICIENT_PLAYERS',
+          payload: { message: '人数不足のためゲームを終了しました' },
+        });
       }
+
+      const sortedRemaining = [...activeRemaining].sort(
+        (a, b) => a.hand.length - b.hand.length
+      );
+      for (const remaining of sortedRemaining) {
+        if (!nextRankings.includes(remaining.id)) {
+          nextRankings.push(remaining.id);
+        }
+      }
+
+      nextPlayers = nextPlayers.map((p) => {
+        const rankIdx = nextRankings.indexOf(p.id);
+        if (rankIdx !== -1 && !p.isFinished) {
+          return { ...p, isFinished: true, rankPosition: rankIdx + 1 };
+        }
+        return p;
+      });
+
       nextTurnPlayerId = null;
 
       // Settle chips if chipsMode is enabled
