@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from '../../core/rules/daifugo/config.js';
+import { decodeConfigFromUrlParam } from '../../core/rules/daifugo/url.js';
 import type { DaifugoRuleState } from '../../core/rules/daifugo/types.js';
 import { PeerJsTransport } from '../../network/peerjs-transport.js';
 import { HostSession } from '../../network/host-session.js';
@@ -31,7 +32,21 @@ export function useGameSession() {
   const [myPlayerId, setMyPlayerId] = useState<string>('');
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
   const [disconnectedPlayerIds, setDisconnectedPlayerIds] = useState<string[]>([]);
-  const [roomConfig, setRoomConfig] = useState<DaifugoConfig>(DEFAULT_DAIFUGO_CONFIG);
+  const [roomConfig, setRoomConfig] = useState<DaifugoConfig>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const rulesParam = params.get('rules');
+        if (rulesParam) {
+          const decoded = decodeConfigFromUrlParam(rulesParam);
+          if (decoded) return decoded;
+        }
+      } catch {
+        // fallback
+      }
+    }
+    return DEFAULT_DAIFUGO_CONFIG;
+  });
   const [state, setState] = useState<SanitizedState<DaifugoRuleState> | null>(null);
   const [recentEvents, setRecentEvents] = useState<readonly GameEvent[]>([]);
   const [error, setError] = useState<string | null>(null);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { DaifugoConfig, SuitLockType, NineEffectType } from '../../core/rules/daifugo/config.js';
 import { DEFAULT_DAIFUGO_CONFIG, resolveRuleConflicts } from '../../core/rules/daifugo/config.js';
+import { encodeConfigToUrlParam, decodeConfigFromUrlParam } from '../../core/rules/daifugo/url.js';
 import { CHIP_PRESETS, type ChipPreset, type BankruptcyRule, type AnteType } from '../../core/types/chips.js';
 import { useTranslation } from '../../i18n/context.js';
 import { LanguageSelector } from '../components/LanguageSelector.js';
@@ -62,7 +63,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
     }
   }, [roomConfig]);
 
-  // Read URL query param for automatic join link: ?room=xxx
+  // Read URL query param for automatic join link: ?room=xxx & ?rules=xxx
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -71,8 +72,18 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
         setTargetPeerId(roomParam);
         setMode('client');
       }
+      const rulesParam = params.get('rules');
+      if (rulesParam) {
+        const decoded = decodeConfigFromUrlParam(rulesParam);
+        if (decoded) {
+          setConfig(decoded);
+          if (onUpdateConfig) {
+            onUpdateConfig(decoded);
+          }
+        }
+      }
     }
-  }, []);
+  }, [onUpdateConfig]);
 
   // Automatically switch to client view if client has joined or has room config
   useEffect(() => {
@@ -85,6 +96,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
     if (peerId && typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('room', peerId);
+      url.searchParams.set('rules', encodeConfigToUrlParam(config));
       navigator.clipboard.writeText(url.toString());
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
@@ -296,7 +308,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 <input
                   type="text"
                   readOnly
-                  value={peerId ? `${window.location.origin}${window.location.pathname}?room=${peerId}` : '接続を準備しています...'}
+                  value={peerId ? `${window.location.origin}${window.location.pathname}?room=${peerId}&rules=${encodeConfigToUrlParam(config)}` : '接続を準備しています...'}
                   className="flex-1 px-3 py-2 rounded-xl bg-emerald-900/60 border border-emerald-700 text-xs font-mono text-emerald-200 select-all focus:outline-none"
                 />
                 <button

@@ -96,6 +96,8 @@ describe('Disconnect and Leave Room UI', () => {
       </I18nProvider>
     );
 
+    // Open settings modal where leave room button is housed
+    fireEvent.click(screen.getByTestId('settings-button'));
     const leaveButton = screen.getByTestId('leave-room-button');
     expect(leaveButton).toBeDefined();
     fireEvent.click(leaveButton);

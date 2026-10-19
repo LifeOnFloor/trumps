@@ -165,6 +165,7 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         onOpenRules={() => setIsRulesModalOpen(true)}
         onLeaveRoom={onLeaveRoom}
         peerId={peerId}
+        config={activeConfig}
       />
 
       {/* Tax Card Exchange Notice */}
@@ -257,18 +258,6 @@ export const TableScreen: React.FC<TableScreenProps> = ({
             >
               📋
             </button>
-
-            {onLeaveRoom && (
-              <button
-                type="button"
-                data-testid="leave-room-button"
-                onClick={onLeaveRoom}
-                aria-label="Leave"
-                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600/60 font-bold transition active:scale-95 text-xs shadow-sm"
-              >
-                🚪
-              </button>
-            )}
           </div>
         </div>
       </div>

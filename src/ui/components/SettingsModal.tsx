@@ -2,6 +2,9 @@ import React from 'react';
 import { useTranslation } from '../../i18n/context.js';
 import { LanguageSelector } from './LanguageSelector.js';
 
+import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
+import { encodeConfigToUrlParam } from '../../core/rules/daifugo/url.js';
+
 export interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,6 +13,7 @@ export interface SettingsModalProps {
   onOpenRules: () => void;
   onLeaveRoom?: () => void;
   peerId?: string;
+  config?: DaifugoConfig;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -20,6 +24,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenRules,
   onLeaveRoom,
   peerId,
+  config,
 }) => {
   const { t } = useTranslation();
   const [copiedLink, setCopiedLink] = React.useState(false);
@@ -30,6 +35,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if (peerId && typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('room', peerId);
+      if (config) {
+        url.searchParams.set('rules', encodeConfigToUrlParam(config));
+      }
       navigator.clipboard.writeText(url.toString());
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);

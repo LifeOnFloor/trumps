@@ -7,6 +7,7 @@ import { I18nProvider } from '../../src/i18n/context.js';
 import type { SanitizedState } from '../../src/core/types/engine.js';
 import type { DaifugoRuleState } from '../../src/core/rules/daifugo/types.js';
 import { DEFAULT_DAIFUGO_CONFIG, type DaifugoConfig } from '../../src/core/rules/daifugo/config.js';
+import { encodeConfigToUrlParam } from '../../src/core/rules/daifugo/url.js';
 
 describe('UI Config Synchronization', () => {
   const customConfig: DaifugoConfig = {
@@ -94,5 +95,40 @@ describe('UI Config Synchronization', () => {
     expect(screen.getByText(/激縛り/)).toBeDefined();
     expect(screen.getByText(/9一時革命/)).toBeDefined();
     expect(screen.getByText(/砂嵐/)).toBeDefined();
+  });
+
+  it('共有リンクを開いた時（参加前）にURLパラメータのrulesからルールが同期されて表示されること', () => {
+    const encodedRules = encodeConfigToUrlParam(customConfig);
+    const originalSearch = window.location.search;
+    try {
+      // Simulate client opening shared link: ?room=host_peer_999&rules=...
+      delete (window as any).location;
+      window.location = new URL(`https://example.com/?room=host_peer_999&rules=${encodedRules}`) as any;
+
+      const onUpdateConfig = vi.fn();
+
+      render(
+        <I18nProvider>
+          <LobbyScreen
+            isHost={false}
+            peerId=""
+            players={[]}
+            error={null}
+            onStartHost={vi.fn()}
+            onJoinClient={vi.fn()}
+            onUpdateConfig={onUpdateConfig}
+            onStartGame={vi.fn()}
+          />
+        </I18nProvider>
+      );
+
+      // Verify that rules are synchronized immediately upon opening the link
+      expect(onUpdateConfig).toHaveBeenCalledWith(customConfig);
+      expect(screen.getByText(/激縛り/)).toBeDefined();
+      expect(screen.getByText(/9一時革命/)).toBeDefined();
+      expect(screen.getByText(/砂嵐/)).toBeDefined();
+    } finally {
+      window.location = new URL(`https://example.com/${originalSearch}`) as any;
+    }
   });
 });
