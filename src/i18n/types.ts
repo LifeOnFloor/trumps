@@ -69,6 +69,13 @@ export interface TranslationDictionary {
   };
   rules: {
     title: string;
+    categories: {
+      action: string;
+      revolution: string;
+      lock: string;
+      ending: string;
+      exchange: string;
+    };
     eightCutTitle: string;
     eightCutDesc: string;
     revolutionTitle: string;
@@ -79,6 +86,26 @@ export interface TranslationDictionary {
     stairsDesc: string;
     suitLockTitle: string;
     suitLockDesc: string;
+    sequenceLockTitle: string;
+    sequenceLockDesc: string;
+    elevenBackTitle: string;
+    elevenBackDesc: string;
+    fiveSkipTitle: string;
+    fiveSkipDesc: string;
+    sevenPassTitle: string;
+    sevenPassDesc: string;
+    tenDiscardTitle: string;
+    tenDiscardDesc: string;
+    nineEffectTitle: string;
+    nineEffectDesc: string;
+    sandstormTitle: string;
+    sandstormDesc: string;
+    miyakoOchiTitle: string;
+    miyakoOchiDesc: string;
+    gekokujoTitle: string;
+    gekokujoDesc: string;
+    cardExchangeTitle: string;
+    cardExchangeDesc: string;
     prohibitedEndingsTitle: string;
     prohibitedEndingsDesc: string;
     chipsTitle: string;

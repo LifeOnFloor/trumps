@@ -14,12 +14,24 @@ export interface PlayMeld {
 export interface DaifugoTableState {
   readonly lastPlay: PlayMeld | null;
   readonly lockedSuits: readonly Suit[] | null;
+  readonly isSequenceLocked: boolean;
+  readonly requiredNextRank: number | null;
   readonly passedPlayerIds: readonly string[];
 }
+
+export type PendingHandAction =
+  | { readonly type: 'SEVEN_PASS'; readonly playerId: string; readonly targetPlayerId: string; readonly count: number }
+  | { readonly type: 'TEN_DISCARD'; readonly playerId: string; readonly count: number };
 
 export interface DaifugoRuleState {
   readonly config: DaifugoConfig;
   readonly isRevolution: boolean;
+  readonly isElevenBack: boolean;
+  readonly turnDirection: 1 | -1;
+  readonly isSequenceLocked: boolean;
+  readonly isGekokujo: boolean;
+  readonly previousRankings?: readonly string[];
+  readonly pendingHandAction: PendingHandAction | null;
   readonly table: DaifugoTableState;
   readonly rankings: readonly string[];
   readonly foulPlayerIds: readonly string[];
@@ -27,4 +39,6 @@ export interface DaifugoRuleState {
 
 export type DaifugoAction =
   | { readonly type: 'PLAY'; readonly cardIds: readonly string[] }
-  | { readonly type: 'PASS' };
+  | { readonly type: 'PASS' }
+  | { readonly type: 'PASS_CARDS'; readonly cardIds: readonly string[] }
+  | { readonly type: 'DISCARD_CARDS'; readonly cardIds: readonly string[] };

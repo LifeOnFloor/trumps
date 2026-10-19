@@ -59,7 +59,8 @@ export function parseMeld(
   const allSameRank = regularCards.every((c) => c.rank === firstRank);
   if (allSameRank) {
     const suits = regularCards.map((c) => c.suit);
-    const strength = getCardBaseStrength(regularCards[0]!, isRevolution);
+    const sandstormActive = isSandstorm(cards, config);
+    const strength = sandstormActive ? 16 : getCardBaseStrength(regularCards[0]!, isRevolution);
     return {
       type: 'pair',
       cards,
@@ -195,8 +196,12 @@ export function isValidPlay(
     return { valid: false, reason: 'Card count mismatch' };
   }
 
+  // Re-evaluate last play's effective strength under current revolution/11-back state
+  const lastMeldCurrent = parseMeld(last.cards, isRevolution, config);
+  const lastStrength = lastMeldCurrent ? lastMeldCurrent.effectiveStrength : last.effectiveStrength;
+
   // Must be strictly stronger
-  if (meld.effectiveStrength <= last.effectiveStrength) {
+  if (meld.effectiveStrength <= lastStrength) {
     return { valid: false, reason: 'Cards are not strong enough' };
   }
 
@@ -211,13 +216,60 @@ export function isValidPlay(
     }
   }
 
+  // Sequence lock check
+  if (table.isSequenceLocked && table.requiredNextRank !== null) {
+    const currentOrder = getMeldOrder(meld);
+    if (currentOrder !== table.requiredNextRank) {
+      return { valid: false, reason: `Sequence locked to rank order ${table.requiredNextRank}` };
+    }
+  }
+
   return { valid: true, meld };
+}
+
+export function getMeldOrder(meld: PlayMeld): number | null {
+  const reg = meld.cards.find((c) => !c.isJoker);
+  if (!reg) return null;
+  return reg.rank === 1 ? 14 : reg.rank === 2 ? 15 : reg.rank;
+}
+
+export function checkSequenceLock(
+  currentMeld: PlayMeld,
+  lastPlay: PlayMeld | null,
+  existingLock: boolean,
+  isRevolution: boolean,
+  config: DaifugoConfig
+): { isSequenceLocked: boolean; requiredNextRank: number | null } {
+  if (!config.sequenceLock && config.suitLock !== 'geki') {
+    return { isSequenceLocked: false, requiredNextRank: null };
+  }
+  const currentOrder = getMeldOrder(currentMeld);
+  if (currentOrder === null) return { isSequenceLocked: existingLock, requiredNextRank: null };
+
+  const nextStep = isRevolution ? -1 : 1;
+  const nextRequired = currentOrder + nextStep;
+
+  if (existingLock) {
+    return { isSequenceLocked: true, requiredNextRank: nextRequired };
+  }
+
+  if (!lastPlay) {
+    return { isSequenceLocked: false, requiredNextRank: null };
+  }
+
+  const lastOrder = getMeldOrder(lastPlay);
+  if (lastOrder !== null && currentOrder === lastOrder + nextStep) {
+    return { isSequenceLocked: true, requiredNextRank: nextRequired };
+  }
+
+  return { isSequenceLocked: false, requiredNextRank: null };
 }
 
 export function checkSuitLock(
   currentMeld: PlayMeld,
   lastPlay: PlayMeld | null,
   existingLock: readonly Suit[] | null,
+  isRevolution: boolean,
   config: DaifugoConfig
 ): readonly Suit[] | null {
   if (config.suitLock === 'none') return null;
@@ -229,9 +281,22 @@ export function checkSuitLock(
     const currentSorted = [...currentMeld.suits].sort();
     const lastSorted = [...lastPlay.suits].sort();
     const isMatch = currentSorted.every((s, i) => s === lastSorted[i]);
-    if (isMatch) {
-      return currentMeld.suits;
+    if (!isMatch) return null;
+
+    if (config.suitLock === 'double' && currentMeld.cards.length < 2) {
+      return null;
     }
+
+    if (config.suitLock === 'geki') {
+      const curOrder = getMeldOrder(currentMeld);
+      const lastOrder = getMeldOrder(lastPlay);
+      const step = isRevolution ? -1 : 1;
+      if (curOrder === null || lastOrder === null || curOrder !== lastOrder + step) {
+        return null;
+      }
+    }
+
+    return currentMeld.suits;
   }
   return null;
 }
@@ -263,4 +328,28 @@ export function isProhibitedEnding(
   if (p.two && !isRevolution && hasTwo(cards)) return true;
   if (p.three && isRevolution && hasThree(cards)) return true;
   return false;
+}
+
+export function hasEleven(cards: readonly Card[]): boolean {
+  return cards.some((c) => !c.isJoker && c.rank === 11);
+}
+
+export function hasNine(cards: readonly Card[]): boolean {
+  return cards.some((c) => !c.isJoker && c.rank === 9);
+}
+
+export function countFive(cards: readonly Card[]): number {
+  return cards.filter((c) => !c.isJoker && c.rank === 5).length;
+}
+
+export function countSeven(cards: readonly Card[]): number {
+  return cards.filter((c) => !c.isJoker && c.rank === 7).length;
+}
+
+export function countTen(cards: readonly Card[]): number {
+  return cards.filter((c) => !c.isJoker && c.rank === 10).length;
+}
+
+export function isSandstorm(cards: readonly Card[], config: DaifugoConfig): boolean {
+  return config.sandstorm && cards.length === 3 && cards.every((c) => !c.isJoker && c.rank === 3);
 }

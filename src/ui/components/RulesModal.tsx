@@ -16,44 +16,67 @@ export const RulesModal: React.FC<RulesModalProps> = ({
   const { t } = useTranslation();
   if (!isOpen) return null;
 
-  const ruleItems = [
+  const categories = [
     {
-      name: t.rules.eightCutTitle,
-      enabled: config.eightCut,
-      desc: t.rules.eightCutDesc,
+      title: t.rules.categories.action,
+      items: [
+        { name: t.rules.eightCutTitle, enabled: config.eightCut, desc: t.rules.eightCutDesc },
+        { name: t.rules.elevenBackTitle, enabled: config.elevenBack, desc: t.rules.elevenBackDesc },
+        { name: t.rules.fiveSkipTitle, enabled: config.fiveSkip, desc: t.rules.fiveSkipDesc },
+        { name: t.rules.sevenPassTitle, enabled: config.sevenPass, desc: t.rules.sevenPassDesc },
+        { name: t.rules.tenDiscardTitle, enabled: config.tenDiscard, desc: t.rules.tenDiscardDesc },
+      ],
     },
     {
-      name: t.rules.revolutionTitle,
-      enabled: config.revolution,
-      desc: t.rules.revolutionDesc,
+      title: t.rules.categories.revolution,
+      items: [
+        { name: t.rules.revolutionTitle, enabled: config.revolution, desc: t.rules.revolutionDesc },
+        { name: t.rules.sandstormTitle, enabled: config.sandstorm, desc: t.rules.sandstormDesc },
+        {
+          name: t.rules.nineEffectTitle,
+          enabled: config.nineEffect !== 'none',
+          desc: `${t.rules.nineEffectDesc} [${config.nineEffect}]`,
+        },
+      ],
     },
     {
-      name: t.rules.spadeThreeTitle,
-      enabled: config.spadeThreeReturn,
-      desc: t.rules.spadeThreeDesc,
+      title: t.rules.categories.lock,
+      items: [
+        {
+          name: t.rules.suitLockTitle,
+          enabled: config.suitLock !== 'none',
+          desc: `${t.rules.suitLockDesc} [${config.suitLock}]`,
+        },
+        { name: t.rules.sequenceLockTitle, enabled: config.sequenceLock, desc: t.rules.sequenceLockDesc },
+        { name: t.rules.spadeThreeTitle, enabled: config.spadeThreeReturn, desc: t.rules.spadeThreeDesc },
+        { name: t.rules.stairsTitle, enabled: config.stairs, desc: t.rules.stairsDesc },
+      ],
     },
     {
-      name: t.rules.stairsTitle,
-      enabled: config.stairs,
-      desc: t.rules.stairsDesc,
+      title: t.rules.categories.ending,
+      items: [
+        {
+          name: t.rules.prohibitedEndingsTitle,
+          enabled:
+            config.prohibitedEndings.joker ||
+            config.prohibitedEndings.eight ||
+            config.prohibitedEndings.two,
+          desc: t.rules.prohibitedEndingsDesc,
+        },
+        { name: t.rules.miyakoOchiTitle, enabled: config.miyakoOchi, desc: t.rules.miyakoOchiDesc },
+        { name: t.rules.gekokujoTitle, enabled: config.gekokujo, desc: t.rules.gekokujoDesc },
+      ],
     },
     {
-      name: t.rules.suitLockTitle,
-      enabled: config.suitLock !== 'none',
-      desc: t.rules.suitLockDesc,
-    },
-    {
-      name: t.rules.prohibitedEndingsTitle,
-      enabled:
-        config.prohibitedEndings.joker ||
-        config.prohibitedEndings.eight ||
-        config.prohibitedEndings.two,
-      desc: t.rules.prohibitedEndingsDesc,
-    },
-    {
-      name: t.rules.chipsTitle,
-      enabled: !!config.chipsMode,
-      desc: `${t.rules.chipsDesc} (${config.initialChips ?? 1000})`,
+      title: t.rules.categories.exchange,
+      items: [
+        { name: t.rules.cardExchangeTitle, enabled: config.cardExchange, desc: t.rules.cardExchangeDesc },
+        {
+          name: t.rules.chipsTitle,
+          enabled: !!config.chipsMode,
+          desc: `${t.rules.chipsDesc} (${config.initialChips ?? 1000})`,
+        },
+      ],
     },
   ];
 
@@ -67,7 +90,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="relative bg-emerald-950/95 border border-emerald-600/70 rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col overflow-hidden text-gray-100"
+        className="relative bg-emerald-950/95 border border-emerald-600/70 rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-2xl max-h-[85vh] flex flex-col overflow-hidden text-gray-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between pb-3 border-b border-emerald-800">
@@ -88,29 +111,38 @@ export const RulesModal: React.FC<RulesModalProps> = ({
           </button>
         </div>
 
-        <div className="overflow-y-auto py-3 space-y-3 flex-1 scrollbar-thin">
-          {ruleItems.map((item) => (
-            <div
-              key={item.name}
-              className={`p-3 rounded-2xl border transition-all ${
-                item.enabled
-                  ? 'bg-emerald-900/60 border-emerald-700/80'
-                  : 'bg-emerald-950/50 border-emerald-900/40 opacity-50'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-extrabold text-sm text-gray-100">{item.name}</span>
-                <span
-                  className={`text-[11px] font-black px-2 py-0.5 rounded-full ${
-                    item.enabled
-                      ? 'bg-yellow-400 text-gray-950 shadow-sm'
-                      : 'bg-gray-700 text-gray-400'
-                  }`}
-                >
-                  {item.enabled ? 'ON' : 'OFF'}
-                </span>
+        <div className="overflow-y-auto py-3 space-y-4 flex-1 scrollbar-thin pr-1">
+          {categories.map((cat) => (
+            <div key={cat.title} className="space-y-2">
+              <h3 className="text-xs font-black text-amber-300 uppercase tracking-wider px-1 border-l-2 border-amber-400 pl-2">
+                {cat.title}
+              </h3>
+              <div className="space-y-2">
+                {cat.items.map((item) => (
+                  <div
+                    key={item.name}
+                    className={`p-2.5 rounded-2xl border transition-all ${
+                      item.enabled
+                        ? 'bg-emerald-900/60 border-emerald-700/80'
+                        : 'bg-emerald-950/50 border-emerald-900/40 opacity-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-extrabold text-xs text-gray-100">{item.name}</span>
+                      <span
+                        className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                          item.enabled
+                            ? 'bg-yellow-400 text-gray-950 shadow-sm'
+                            : 'bg-gray-700 text-gray-400'
+                        }`}
+                      >
+                        {item.enabled ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-200/80 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
               </div>
-              <p className="text-xs text-emerald-200/80 leading-relaxed">{item.desc}</p>
             </div>
           ))}
         </div>

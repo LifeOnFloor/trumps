@@ -11,11 +11,18 @@ import type {
 import { createDeck, dealHands, shuffleDeck } from '../../utils/deck.js';
 import type { DaifugoConfig } from './config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from './config.js';
-import type { DaifugoAction, DaifugoRuleState, PlayMeld } from './types.js';
+import type { DaifugoAction, DaifugoRuleState, PendingHandAction, PlayMeld } from './types.js';
 import {
+  checkSequenceLock,
   checkSuitLock,
+  countFive,
+  countSeven,
+  countTen,
   hasEight,
+  hasEleven,
+  hasNine,
   isProhibitedEnding,
+  isSandstorm,
   isSingleJoker,
   isSpadeThree,
   isValidPlay,
@@ -78,9 +85,16 @@ export class DaifugoPlugin
     const ruleState: DaifugoRuleState = {
       config: mergedConfig,
       isRevolution: false,
+      isElevenBack: false,
+      turnDirection: 1,
+      isSequenceLocked: false,
+      isGekokujo: false,
+      pendingHandAction: null,
       table: {
         lastPlay: null,
         lockedSuits: null,
+        isSequenceLocked: false,
+        requiredNextRank: null,
         passedPlayerIds: [],
       },
       rankings: [],
@@ -102,6 +116,27 @@ export class DaifugoPlugin
     const player = context.players.find((p) => p.id === playerId);
     if (!player || player.isFinished) return false;
 
+    // Handle pending hand actions (7-pass or 10-discard)
+    if (ruleState.pendingHandAction) {
+      if (ruleState.pendingHandAction.playerId !== playerId) return false;
+      const handCardMap = new Map(player.hand.map((c) => [c.id, c]));
+
+      if (ruleState.pendingHandAction.type === 'SEVEN_PASS') {
+        if (action.type !== 'PASS_CARDS') return false;
+        const requiredCount = Math.min(ruleState.pendingHandAction.count, player.hand.length);
+        if (action.cardIds.length !== requiredCount) return false;
+        return action.cardIds.every((id) => handCardMap.has(id));
+      }
+
+      if (ruleState.pendingHandAction.type === 'TEN_DISCARD') {
+        if (action.type !== 'DISCARD_CARDS') return false;
+        if (action.cardIds.length > ruleState.pendingHandAction.count) return false;
+        return action.cardIds.every((id) => handCardMap.has(id));
+      }
+
+      return false;
+    }
+
     if (action.type === 'PASS') {
       // Cannot pass if table is empty
       if (!ruleState.table.lastPlay) return false;
@@ -119,10 +154,11 @@ export class DaifugoPlugin
         cardsToPlay.push(card);
       }
 
+      const isEffectiveRev = ruleState.isRevolution !== ruleState.isElevenBack;
       const { valid } = isValidPlay(
         cardsToPlay,
         ruleState.table,
-        ruleState.isRevolution,
+        isEffectiveRev,
         ruleState.config
       );
       return valid;
@@ -152,11 +188,60 @@ export class DaifugoPlugin
     let nextPlayers = [...context.players];
     let nextTable = { ...ruleState.table };
     let nextRevolution = ruleState.isRevolution;
+    let nextElevenBack = ruleState.isElevenBack;
+    let nextTurnDirection = ruleState.turnDirection;
+    let nextGekokujo = ruleState.isGekokujo;
+    let nextPendingHandAction: PendingHandAction | null = ruleState.pendingHandAction;
+    let skipCount = 0;
     let nextRankings = [...ruleState.rankings];
     let nextFoulPlayers = [...ruleState.foulPlayerIds];
     let nextTurnPlayerId: string | null = null;
 
-    if (action.type === 'PASS') {
+    if (action.type === 'PASS_CARDS') {
+      const pending = ruleState.pendingHandAction;
+      if (!pending || pending.type !== 'SEVEN_PASS') {
+        throw new Error('No pending seven pass action');
+      }
+      const cardsToPass = action.cardIds.map((id) => player.hand.find((c) => c.id === id)!);
+      const remainingHand = player.hand.filter((c) => !action.cardIds.includes(c.id));
+
+      nextPlayers = nextPlayers.map((p) => {
+        if (p.id === playerId) {
+          return { ...p, hand: remainingHand };
+        }
+        if (p.id === pending.targetPlayerId) {
+          return { ...p, hand: [...p.hand, ...cardsToPass] };
+        }
+        return p;
+      });
+
+      events.push({
+        type: 'CARDS_PASSED',
+        payload: { from: playerId, to: pending.targetPlayerId, cards: cardsToPass },
+      });
+
+      nextPendingHandAction = null;
+      nextTurnPlayerId = pending.targetPlayerId;
+    } else if (action.type === 'DISCARD_CARDS') {
+      const pending = ruleState.pendingHandAction;
+      if (!pending || pending.type !== 'TEN_DISCARD') {
+        throw new Error('No pending ten discard action');
+      }
+      const discardedCards = action.cardIds.map((id) => player.hand.find((c) => c.id === id)!);
+      const remainingHand = player.hand.filter((c) => !action.cardIds.includes(c.id));
+
+      nextPlayers = nextPlayers.map((p) =>
+        p.id === playerId ? { ...p, hand: remainingHand } : p
+      );
+
+      events.push({
+        type: 'CARDS_DISCARDED',
+        payload: { playerId, cards: discardedCards },
+      });
+
+      nextPendingHandAction = null;
+      nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection, 0);
+    } else if (action.type === 'PASS') {
       events.push({ type: 'PLAYER_PASSED', payload: { playerId } });
       const nextPassed = [...nextTable.passedPlayerIds, playerId];
 
@@ -170,9 +255,12 @@ export class DaifugoPlugin
       if (allOthersPassed) {
         // Table cleared!
         events.push({ type: 'TABLE_CLEARED' });
+        nextElevenBack = false;
         nextTable = {
           lastPlay: null,
           lockedSuits: null,
+          isSequenceLocked: false,
+          requiredNextRank: null,
           passedPlayerIds: [],
         };
         // Next turn is lastPlay player, or if finished, the next active player from them
@@ -180,14 +268,14 @@ export class DaifugoPlugin
         if (lastPlayerObj && !lastPlayerObj.isFinished) {
           nextTurnPlayerId = lastPlayPlayerId!;
         } else {
-          nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, lastPlayPlayerId ?? playerId);
+          nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, lastPlayPlayerId ?? playerId, nextTurnDirection);
         }
       } else {
         nextTable = {
           ...nextTable,
           passedPlayerIds: nextPassed,
         };
-        nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId);
+        nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection);
       }
     } else {
       // PLAY
@@ -196,16 +284,26 @@ export class DaifugoPlugin
 
       events.push({ type: 'CARDS_PLAYED', payload: { playerId, cards: playedCards } });
 
+      const isEffectiveRevBefore = ruleState.isRevolution !== ruleState.isElevenBack;
       const { meld } = isValidPlay(
         playedCards,
         ruleState.table,
-        ruleState.isRevolution,
+        isEffectiveRevBefore,
         ruleState.config
       );
       const currentMeld: PlayMeld = {
         ...meld!,
         playerId,
       };
+
+      // Check Sandstorm (3 of three 3s)
+      if (isSandstorm(playedCards, ruleState.config)) {
+        events.push({ type: 'SANDSTORM', payload: { playerId } });
+        if (ruleState.config.revolution) {
+          nextRevolution = !nextRevolution;
+          events.push({ type: 'REVOLUTION', payload: { isRevolution: nextRevolution } });
+        }
+      }
 
       // Check Spade 3 return
       const isSp3Return =
@@ -216,9 +314,33 @@ export class DaifugoPlugin
         isSpadeThree(playedCards[0]!);
 
       // Check Revolution: 4 cards or more
-      if (ruleState.config.revolution && playedCards.length >= 4) {
+      if (ruleState.config.revolution && playedCards.length >= 4 && !isSandstorm(playedCards, ruleState.config)) {
         nextRevolution = !nextRevolution;
         events.push({ type: 'REVOLUTION', payload: { isRevolution: nextRevolution } });
+      }
+
+      // Check 11-back
+      if (ruleState.config.elevenBack && hasEleven(playedCards)) {
+        nextElevenBack = !nextElevenBack;
+        events.push({ type: 'ELEVEN_BACK', payload: { isElevenBack: nextElevenBack } });
+      }
+
+      // Check 9 effects
+      if (ruleState.config.nineEffect === 'reverse' && hasNine(playedCards)) {
+        nextTurnDirection = (nextTurnDirection * -1) as 1 | -1;
+        events.push({ type: 'NINE_REVERSE', payload: { turnDirection: nextTurnDirection } });
+      } else if (ruleState.config.nineEffect === 'revolution' && hasNine(playedCards)) {
+        nextElevenBack = !nextElevenBack;
+        events.push({ type: 'NINE_REVOLUTION', payload: { isRevolution: nextElevenBack } });
+      }
+
+      // Check 5-skip
+      if (ruleState.config.fiveSkip) {
+        const fives = countFive(playedCards);
+        if (fives > 0) {
+          skipCount = fives;
+          events.push({ type: 'FIVE_SKIP', payload: { skipCount } });
+        }
       }
 
       // Check Eight Cut
@@ -234,6 +356,33 @@ export class DaifugoPlugin
           nextFoulPlayers.push(playerId);
           events.push({ type: 'FOUL_FINISH', payload: { playerId } });
         } else {
+          // Check Gekokujo & Miyako-Ochi on first finisher
+          if (nextRankings.length === 0) {
+            // Gekokujo
+            if (ruleState.config.gekokujo && ruleState.previousRankings && ruleState.previousRankings.length > 0) {
+              const prevDaihinmin = ruleState.previousRankings[ruleState.previousRankings.length - 1];
+              if (playerId === prevDaihinmin) {
+                nextGekokujo = true;
+                events.push({ type: 'GEKOKUJO', payload: { playerId } });
+              }
+            }
+
+            // Miyako-Ochi
+            if (ruleState.config.miyakoOchi && ruleState.previousRankings && ruleState.previousRankings.length > 0) {
+              const prevDaifugo = ruleState.previousRankings[0];
+              if (prevDaifugo && prevDaifugo !== playerId) {
+                events.push({ type: 'MIYAKO_OCHI', payload: { playerId: prevDaifugo } });
+                const totalPlayers = nextPlayers.length;
+                nextPlayers = nextPlayers.map((p) =>
+                  p.id === prevDaifugo
+                    ? { ...p, hand: [], isFinished: true, rankPosition: totalPlayers }
+                    : p
+                );
+                nextFoulPlayers.push(prevDaifugo);
+              }
+            }
+          }
+
           nextRankings.push(playerId);
           events.push({
             type: 'PLAYER_FINISHED',
@@ -262,30 +411,76 @@ export class DaifugoPlugin
           events.push({ type: 'SPADE_THREE_RETURN', payload: { playerId } });
         }
         events.push({ type: 'TABLE_CLEARED' });
+        nextElevenBack = false;
         nextTable = {
           lastPlay: null,
           lockedSuits: null,
+          isSequenceLocked: false,
+          requiredNextRank: null,
           passedPlayerIds: [],
         };
         // Turn stays with player if not finished
         if (!playerFinished) {
           nextTurnPlayerId = playerId;
         } else {
-          nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId);
+          nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection, 0);
         }
       } else {
         const lockedSuits = checkSuitLock(
           currentMeld,
           ruleState.table.lastPlay,
           ruleState.table.lockedSuits,
+          isEffectiveRevBefore,
           ruleState.config
         );
+        if (!ruleState.table.lockedSuits && lockedSuits) {
+          events.push({ type: 'SUIT_LOCKED', payload: { suits: lockedSuits } });
+        }
+
+        const seqLock = checkSequenceLock(
+          currentMeld,
+          ruleState.table.lastPlay,
+          ruleState.table.isSequenceLocked,
+          isEffectiveRevBefore,
+          ruleState.config
+        );
+        if (!ruleState.table.isSequenceLocked && seqLock.isSequenceLocked) {
+          events.push({ type: 'SEQUENCE_LOCKED' });
+        }
+
         nextTable = {
           lastPlay: currentMeld,
           lockedSuits,
+          isSequenceLocked: seqLock.isSequenceLocked,
+          requiredNextRank: seqLock.requiredNextRank,
           passedPlayerIds: [],
         };
-        nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId);
+        nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection, skipCount);
+
+        // Check 7-pass or 10-discard triggers
+        if (!playerFinished && remainingHand.length > 0) {
+          if (ruleState.config.sevenPass && countSeven(playedCards) > 0) {
+            const count = Math.min(countSeven(playedCards), remainingHand.length);
+            const targetPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection, 0);
+            if (targetPlayerId) {
+              nextPendingHandAction = {
+                type: 'SEVEN_PASS',
+                playerId,
+                targetPlayerId,
+                count,
+              };
+              nextTurnPlayerId = playerId;
+            }
+          } else if (ruleState.config.tenDiscard && countTen(playedCards) > 0) {
+            const count = Math.min(countTen(playedCards), remainingHand.length);
+            nextPendingHandAction = {
+              type: 'TEN_DISCARD',
+              playerId,
+              count,
+            };
+            nextTurnPlayerId = playerId;
+          }
+        }
       }
     }
 
@@ -329,6 +524,10 @@ export class DaifugoPlugin
         });
       }
 
+      if (nextGekokujo) {
+        nextRankings = [...nextRankings].reverse();
+      }
+
       events.push({
         type: 'GAME_OVER',
         payload: {
@@ -349,6 +548,12 @@ export class DaifugoPlugin
     const nextRuleState: DaifugoRuleState = {
       config: ruleState.config,
       isRevolution: nextRevolution,
+      isElevenBack: nextElevenBack,
+      turnDirection: nextTurnDirection,
+      isSequenceLocked: nextTable.isSequenceLocked,
+      isGekokujo: nextGekokujo,
+      previousRankings: ruleState.previousRankings,
+      pendingHandAction: nextPendingHandAction,
       table: nextTable,
       rankings: nextRankings,
       foulPlayerIds: nextFoulPlayers,
@@ -391,16 +596,23 @@ export class DaifugoPlugin
 
   private findNextActivePlayerId(
     players: readonly PlayerState[],
-    fromPlayerId: string
+    fromPlayerId: string,
+    direction: 1 | -1 = 1,
+    skipCount: number = 0
   ): string | null {
     const total = players.length;
     const startIndex = players.findIndex((p) => p.id === fromPlayerId);
     if (startIndex === -1) return null;
 
-    for (let i = 1; i < total; i++) {
-      const nextIdx = (startIndex + i) % total;
+    let skipped = 0;
+    for (let i = 1; i <= total * 2; i++) {
+      const nextIdx = (startIndex + i * direction + total * 100) % total;
       const candidate = players[nextIdx]!;
       if (!candidate.isFinished) {
+        if (skipped < skipCount) {
+          skipped++;
+          continue;
+        }
         return candidate.id;
       }
     }

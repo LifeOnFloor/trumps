@@ -1,7 +1,7 @@
 import React from 'react';
 import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
 
-export type PresetType = 'standard' | 'full' | 'simple';
+export type PresetType = 'standard' | 'official' | 'full' | 'simple';
 
 export interface RulePresetsProps {
   onApplyPreset: (configPartial: Partial<DaifugoConfig>) => void;
@@ -10,13 +10,50 @@ export interface RulePresetsProps {
 export const PRESETS: Record<PresetType, { title: string; desc: string; config: Partial<DaifugoConfig> }> = {
   standard: {
     title: 'スタンダード',
-    desc: '8切り & 革命のみ（定番）',
+    desc: '8切り・革命・都落ち・11バック（定番）',
     config: {
       eightCut: true,
       revolution: true,
       spadeThreeReturn: false,
       stairs: false,
       suitLock: 'none',
+      sequenceLock: false,
+      nineEffect: 'none',
+      elevenBack: true,
+      fiveSkip: false,
+      sevenPass: false,
+      tenDiscard: false,
+      sandstorm: false,
+      miyakoOchi: true,
+      gekokujo: false,
+      cardExchange: false,
+      prohibitedEndings: {
+        joker: true,
+        eight: true,
+        two: true,
+        three: true,
+      },
+    },
+  },
+  official: {
+    title: '公式大会',
+    desc: '日本大富豪連盟 公式ルール',
+    config: {
+      eightCut: true,
+      revolution: true,
+      spadeThreeReturn: true,
+      stairs: true,
+      suitLock: 'single',
+      sequenceLock: false,
+      nineEffect: 'none',
+      elevenBack: false,
+      fiveSkip: false,
+      sevenPass: false,
+      tenDiscard: false,
+      sandstorm: false,
+      miyakoOchi: true,
+      gekokujo: false,
+      cardExchange: false,
       prohibitedEndings: {
         joker: true,
         eight: true,
@@ -27,13 +64,23 @@ export const PRESETS: Record<PresetType, { title: string; desc: string; config: 
   },
   full: {
     title: 'ローカル全盛り',
-    desc: 'スペ3・階段・縛り・禁止上がり',
+    desc: '11バック・7渡し・10捨て・砂嵐・下剋上等',
     config: {
       eightCut: true,
       revolution: true,
       spadeThreeReturn: true,
       stairs: true,
-      suitLock: 'single',
+      suitLock: 'double',
+      sequenceLock: true,
+      nineEffect: 'reverse',
+      elevenBack: true,
+      fiveSkip: true,
+      sevenPass: true,
+      tenDiscard: true,
+      sandstorm: true,
+      miyakoOchi: true,
+      gekokujo: true,
+      cardExchange: true,
       prohibitedEndings: {
         joker: true,
         eight: true,
@@ -51,6 +98,16 @@ export const PRESETS: Record<PresetType, { title: string; desc: string; config: 
       spadeThreeReturn: false,
       stairs: false,
       suitLock: 'none',
+      sequenceLock: false,
+      nineEffect: 'none',
+      elevenBack: false,
+      fiveSkip: false,
+      sevenPass: false,
+      tenDiscard: false,
+      sandstorm: false,
+      miyakoOchi: false,
+      gekokujo: false,
+      cardExchange: false,
       prohibitedEndings: {
         joker: false,
         eight: false,
@@ -65,7 +122,7 @@ export const RulePresets: React.FC<RulePresetsProps> = ({ onApplyPreset }) => {
   return (
     <div className="space-y-1.5">
       <div className="text-xs font-bold text-emerald-300">ルール一括プリセット</div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {(Object.keys(PRESETS) as PresetType[]).map((key) => {
           const item = PRESETS[key];
           return (

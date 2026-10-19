@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
-import { DEFAULT_DAIFUGO_CONFIG } from '../../core/rules/daifugo/config.js';
+import type { DaifugoConfig, SuitLockType, NineEffectType } from '../../core/rules/daifugo/config.js';
+import { DEFAULT_DAIFUGO_CONFIG, resolveRuleConflicts } from '../../core/rules/daifugo/config.js';
 import { useTranslation } from '../../i18n/context.js';
 import { LanguageSelector } from '../components/LanguageSelector.js';
 import { GameSelector } from '../components/GameSelector.js';
@@ -71,18 +71,29 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   };
 
   const updateAndNotifyConfig = (newConfig: DaifugoConfig) => {
-    setConfig(newConfig);
+    const safeConfig = resolveRuleConflicts(newConfig);
+    setConfig(safeConfig);
     if (onUpdateConfig) {
-      onUpdateConfig(newConfig);
+      onUpdateConfig(safeConfig);
     }
   };
 
-  const toggleConfig = (key: keyof Omit<DaifugoConfig, 'suitLock' | 'prohibitedEndings'>) => {
+  const toggleConfig = (
+    key: keyof Omit<DaifugoConfig, 'suitLock' | 'nineEffect' | 'prohibitedEndings'>
+  ) => {
     const updated: DaifugoConfig = {
       ...config,
       [key]: !config[key],
     };
     updateAndNotifyConfig(updated);
+  };
+
+  const setSuitLock = (suitLock: SuitLockType) => {
+    updateAndNotifyConfig({ ...config, suitLock });
+  };
+
+  const setNineEffect = (nineEffect: NineEffectType) => {
+    updateAndNotifyConfig({ ...config, nineEffect });
   };
 
   const handleApplyPreset = (configPartial: Partial<DaifugoConfig>) => {
@@ -241,46 +252,94 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             {/* Rule Presets */}
             <RulePresets onApplyPreset={handleApplyPreset} />
 
-            {/* Fine-grained Toggles */}
-            <div className="p-3 rounded-2xl bg-emerald-950/50 border border-emerald-800/80 text-xs space-y-2">
-              <div className="font-extrabold text-emerald-300">{t.lobby.ruleDetails}</div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <label className="flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-900/50">
-                  <input
-                    type="checkbox"
-                    checked={config.eightCut}
-                    onChange={() => toggleConfig('eightCut')}
-                    className="accent-yellow-400 w-4 h-4 rounded"
-                  />
-                  <span className="font-bold">{t.rules.eightCutTitle}</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-900/50">
-                  <input
-                    type="checkbox"
-                    checked={config.revolution}
-                    onChange={() => toggleConfig('revolution')}
-                    className="accent-yellow-400 w-4 h-4 rounded"
-                  />
-                  <span className="font-bold">{t.rules.revolutionTitle}</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-900/50">
-                  <input
-                    type="checkbox"
-                    checked={config.spadeThreeReturn}
-                    onChange={() => toggleConfig('spadeThreeReturn')}
-                    className="accent-yellow-400 w-4 h-4 rounded"
-                  />
-                  <span className="font-bold">{t.rules.spadeThreeTitle}</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-900/50">
-                  <input
-                    type="checkbox"
-                    checked={config.stairs}
-                    onChange={() => toggleConfig('stairs')}
-                    className="accent-yellow-400 w-4 h-4 rounded"
-                  />
-                  <span className="font-bold">{t.rules.stairsTitle}</span>
-                </label>
+            {/* Fine-grained Toggles & Exclusive Selectors */}
+            <div className="p-3.5 rounded-2xl bg-emerald-950/70 border border-emerald-800/80 text-xs space-y-3.5 shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-xs text-yellow-300">{t.lobby.ruleDetails}</span>
+                <span className="text-[10px] text-emerald-400">クリックで個別切替・排他自動解決</span>
+              </div>
+
+              {/* Exclusive 1: Suit Lock */}
+              <div className="space-y-1">
+                <div className="text-[11px] font-bold text-emerald-300">{t.rules.suitLockTitle}（単一選択）</div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(['none', 'single', 'double', 'geki'] as const).map((modeKey) => (
+                    <button
+                      key={modeKey}
+                      type="button"
+                      onClick={() => setSuitLock(modeKey)}
+                      className={`py-1 px-1.5 rounded-lg border text-center font-bold text-[11px] transition-all ${
+                        config.suitLock === modeKey
+                          ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                          : 'bg-emerald-900/50 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
+                      }`}
+                    >
+                      {modeKey === 'none' && 'なし'}
+                      {modeKey === 'single' && '片縛り'}
+                      {modeKey === 'double' && '両縛り'}
+                      {modeKey === 'geki' && '激縛り'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Exclusive 2: 9 Effect */}
+              <div className="space-y-1">
+                <div className="text-[11px] font-bold text-emerald-300">{t.rules.nineEffectTitle}（単一選択）</div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(['none', 'reverse', 'revolution'] as const).map((modeKey) => (
+                    <button
+                      key={modeKey}
+                      type="button"
+                      onClick={() => setNineEffect(modeKey)}
+                      className={`py-1 px-1.5 rounded-lg border text-center font-bold text-[11px] transition-all ${
+                        config.nineEffect === modeKey
+                          ? 'bg-yellow-400 text-gray-950 border-yellow-300 shadow-sm'
+                          : 'bg-emerald-900/50 text-emerald-300 border-emerald-700/60 hover:bg-emerald-800/60'
+                      }`}
+                    >
+                      {modeKey === 'none' && 'なし'}
+                      {modeKey === 'reverse' && '9リバース'}
+                      {modeKey === 'revolution' && '9一時革命'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Full Rules Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-xs pt-1 border-t border-emerald-900">
+                {[
+                  { key: 'eightCut', title: t.rules.eightCutTitle },
+                  { key: 'revolution', title: t.rules.revolutionTitle },
+                  { key: 'elevenBack', title: t.rules.elevenBackTitle },
+                  { key: 'miyakoOchi', title: t.rules.miyakoOchiTitle },
+                  { key: 'spadeThreeReturn', title: t.rules.spadeThreeTitle },
+                  { key: 'stairs', title: t.rules.stairsTitle },
+                  { key: 'sequenceLock', title: t.rules.sequenceLockTitle },
+                  { key: 'fiveSkip', title: t.rules.fiveSkipTitle },
+                  { key: 'sevenPass', title: t.rules.sevenPassTitle },
+                  { key: 'tenDiscard', title: t.rules.tenDiscardTitle },
+                  { key: 'sandstorm', title: t.rules.sandstormTitle },
+                  { key: 'gekokujo', title: t.rules.gekokujoTitle },
+                  { key: 'cardExchange', title: t.rules.cardExchangeTitle },
+                ].map((item) => (
+                  <label
+                    key={item.key}
+                    className={`flex items-center space-x-1.5 cursor-pointer p-1.5 rounded-lg border transition-all ${
+                      config[item.key as keyof DaifugoConfig]
+                        ? 'bg-emerald-900/80 border-emerald-600/80 text-yellow-300'
+                        : 'bg-emerald-950/40 border-emerald-900/50 text-gray-400 opacity-60 hover:opacity-90'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!!config[item.key as keyof DaifugoConfig]}
+                      onChange={() => toggleConfig(item.key as any)}
+                      className="accent-yellow-400 w-3.5 h-3.5 rounded"
+                    />
+                    <span className="font-extrabold text-[11px] truncate">{item.title}</span>
+                  </label>
+                ))}
               </div>
             </div>
 
