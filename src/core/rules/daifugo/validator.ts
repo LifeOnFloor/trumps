@@ -240,20 +240,31 @@ export function checkSequenceLock(
   currentMeld: PlayMeld,
   lastPlay: PlayMeld | null,
   existingLock: boolean,
-  isRevolution: boolean,
-  config: DaifugoConfig
+  isEffectiveRevBefore: boolean,
+  isEffectiveRevAfterOrConfig: boolean | DaifugoConfig,
+  optionalConfig?: DaifugoConfig
 ): { isSequenceLocked: boolean; requiredNextRank: number | null } {
+  let isEffectiveRevAfter = isEffectiveRevBefore;
+  let config: DaifugoConfig;
+  if (typeof isEffectiveRevAfterOrConfig === 'boolean') {
+    isEffectiveRevAfter = isEffectiveRevAfterOrConfig;
+    config = optionalConfig!;
+  } else {
+    config = isEffectiveRevAfterOrConfig;
+  }
+
   if (!config.sequenceLock && config.suitLock !== 'geki') {
     return { isSequenceLocked: false, requiredNextRank: null };
   }
-  const nextStep = isRevolution ? -1 : 1;
+  const stepBefore = isEffectiveRevBefore ? -1 : 1;
+  const stepAfter = isEffectiveRevAfter ? -1 : 1;
   const lastOrder = lastPlay ? getMeldOrder(lastPlay) : null;
   const rawOrder = getMeldOrder(currentMeld);
   // Pure joker substitutes for the expected next rank
-  const currentOrder = rawOrder ?? (lastOrder !== null ? lastOrder + nextStep : null);
+  const currentOrder = rawOrder ?? (lastOrder !== null ? lastOrder + stepBefore : null);
   if (currentOrder === null) return { isSequenceLocked: existingLock, requiredNextRank: null };
 
-  const nextRequired = currentOrder + nextStep;
+  const nextRequired = currentOrder + stepAfter;
   const isWithinValidRanks = nextRequired >= 3 && nextRequired <= 15;
 
   if (existingLock) {
@@ -264,7 +275,7 @@ export function checkSequenceLock(
     return { isSequenceLocked: false, requiredNextRank: null };
   }
 
-  if (lastOrder !== null && currentOrder === lastOrder + nextStep) {
+  if (lastOrder !== null && currentOrder === lastOrder + stepBefore) {
     return { isSequenceLocked: true, requiredNextRank: isWithinValidRanks ? nextRequired : null };
   }
 
@@ -308,7 +319,11 @@ export function checkSuitLock(
 }
 
 export function hasEight(cards: readonly Card[]): boolean {
-  return cards.some((c) => !c.isJoker && c.rank === 8);
+  const regularCards = cards.filter((c) => !c.isJoker);
+  if (regularCards.length > 0 && regularCards.every((c) => c.rank === 8)) {
+    return true;
+  }
+  return regularCards.some((c) => c.rank === 8);
 }
 
 export function hasTwo(cards: readonly Card[]): boolean {
@@ -337,23 +352,43 @@ export function isProhibitedEnding(
 }
 
 export function hasEleven(cards: readonly Card[]): boolean {
-  return cards.some((c) => !c.isJoker && c.rank === 11);
+  const regularCards = cards.filter((c) => !c.isJoker);
+  if (regularCards.length > 0 && regularCards.every((c) => c.rank === 11)) {
+    return true;
+  }
+  return regularCards.some((c) => c.rank === 11);
 }
 
 export function hasNine(cards: readonly Card[]): boolean {
-  return cards.some((c) => !c.isJoker && c.rank === 9);
+  const regularCards = cards.filter((c) => !c.isJoker);
+  if (regularCards.length > 0 && regularCards.every((c) => c.rank === 9)) {
+    return true;
+  }
+  return regularCards.some((c) => c.rank === 9);
 }
 
 export function countFive(cards: readonly Card[]): number {
-  return cards.filter((c) => !c.isJoker && c.rank === 5).length;
+  const regularCards = cards.filter((c) => !c.isJoker);
+  if (regularCards.length > 0 && regularCards.every((c) => c.rank === 5)) {
+    return cards.length;
+  }
+  return regularCards.filter((c) => c.rank === 5).length;
 }
 
 export function countSeven(cards: readonly Card[]): number {
-  return cards.filter((c) => !c.isJoker && c.rank === 7).length;
+  const regularCards = cards.filter((c) => !c.isJoker);
+  if (regularCards.length > 0 && regularCards.every((c) => c.rank === 7)) {
+    return cards.length;
+  }
+  return regularCards.filter((c) => c.rank === 7).length;
 }
 
 export function countTen(cards: readonly Card[]): number {
-  return cards.filter((c) => !c.isJoker && c.rank === 10).length;
+  const regularCards = cards.filter((c) => !c.isJoker);
+  if (regularCards.length > 0 && regularCards.every((c) => c.rank === 10)) {
+    return cards.length;
+  }
+  return regularCards.filter((c) => c.rank === 10).length;
 }
 
 export function isSandstorm(cards: readonly Card[], config: DaifugoConfig): boolean {

@@ -61,7 +61,6 @@ export const TableScreen: React.FC<TableScreenProps> = ({
 
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
   const [isMuted, setIsMuted] = useState(isAudioMuted());
   const prevEventCountRef = useRef(recentEvents.length);
 
@@ -145,18 +144,8 @@ export const TableScreen: React.FC<TableScreenProps> = ({
     ? players.find((p) => p.id === (ruleState.pendingHandAction as any)?.targetPlayerId)
     : undefined;
 
-  const handleCopyInviteLink = () => {
-    if (peerId && typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('room', peerId);
-      navigator.clipboard.writeText(url.toString());
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
-    }
-  };
-
   return (
-    <div className="relative flex flex-col justify-between items-center min-h-screen p-2 sm:p-4 bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white overflow-hidden select-none">
+    <div className="relative flex flex-col justify-between items-center h-[100dvh] max-h-[100dvh] p-2 sm:p-4 bg-gradient-to-b from-emerald-950 via-emerald-900 to-emerald-950 text-white overflow-hidden select-none">
       {/* Event banner toast */}
       <EventBanner events={recentEvents} players={players} />
 
@@ -175,29 +164,57 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         onToggleMute={handleToggleMute}
         onOpenRules={() => setIsRulesModalOpen(true)}
         onLeaveRoom={onLeaveRoom}
+        peerId={peerId}
       />
 
+      {/* Tax Card Exchange Notice */}
+      {ruleState.exchanges && ruleState.exchanges.length > 0 && (
+        <div
+          data-testid="card-exchange-banner"
+          className="w-full max-w-md mx-auto mb-1 p-2 rounded-2xl bg-amber-950/90 border border-yellow-500/60 shadow-xl text-xs text-yellow-200 animate-in fade-in slide-in-from-top-2 duration-300"
+        >
+          <div className="font-black text-yellow-400 flex items-center space-x-1.5 mb-1">
+            <span>🔄</span>
+            <span>階級カード交換</span>
+          </div>
+          <div className="space-y-0.5 text-[11px] text-amber-100/90">
+            {ruleState.exchanges.map((ex, idx) => {
+              const fromName = players.find((p) => p.id === ex.fromPlayerId)?.name ?? 'Player';
+              const toName = players.find((p) => p.id === ex.toPlayerId)?.name ?? 'Player';
+              return (
+                <div key={idx} className="flex items-center justify-between">
+                  <span>{fromName} ➔ {toName}</span>
+                  <span className="font-bold text-yellow-300">{ex.cards.length}枚</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Top Bar: Title & Utility Buttons */}
-      <div className="w-full max-w-4xl flex items-center justify-between px-2 pt-1 pb-2">
+      <div className="w-full max-w-4xl flex items-center justify-between px-2 pt-1 pb-1">
         <div className="flex items-center space-x-2">
           <span className="text-xl">🃏</span>
           <span className="font-black text-sm sm:text-base text-yellow-400 tracking-wider">
             {t.app.title}
           </span>
           {activeConfig.chipsMode && (
-            <div className="flex items-center space-x-1.5">
-              <span
-                data-testid="chips-mode-badge"
-                className="text-[10px] px-2.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-black shadow-sm"
-              >
-                {t.table.chipsBadge}
-              </span>
+            <div className="flex items-center space-x-1.5" data-testid="chips-mode-badge">
+              {activeConfig.ante && activeConfig.ante > 0 ? (
+                <span
+                  data-testid="ante-badge"
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/40 font-black shadow-sm"
+                >
+                  🪙 {activeConfig.ante}
+                </span>
+              ) : null}
               {(ruleState.pot ?? 0) > 0 && (
                 <span
                   data-testid="pot-badge"
                   className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 border border-amber-400/50 font-black shadow-sm flex items-center space-x-1"
                 >
-                  <span>🏺 ポット:</span>
+                  <span>🏺</span>
                   <span>{(ruleState.pot ?? 0).toLocaleString()}</span>
                 </span>
               )}
@@ -206,18 +223,18 @@ export const TableScreen: React.FC<TableScreenProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
-          {/* Mobile consolidated settings button */}
+          {/* Settings button (pure icon) */}
           <button
             type="button"
             data-testid="settings-button"
             onClick={() => setIsSettingsOpen(true)}
-            className="flex sm:hidden items-center space-x-1 px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-bold transition active:scale-95 shadow-sm"
+            aria-label="Settings"
+            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-bold transition active:scale-95 shadow-sm text-sm"
           >
-            <span>⚙️</span>
-            <span>設定</span>
+            ⚙️
           </button>
 
-          {/* Desktop full toolbar */}
+          {/* Desktop quick shortcuts (pure icons for language independence) */}
           <div className="hidden sm:flex items-center space-x-2">
             <LanguageSelector />
 
@@ -235,10 +252,10 @@ export const TableScreen: React.FC<TableScreenProps> = ({
               type="button"
               data-testid="table-rules-button"
               onClick={() => setIsRulesModalOpen(true)}
-              className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-black transition active:scale-95 flex items-center space-x-1 shadow-sm"
+              aria-label="Rules"
+              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-yellow-300 border border-yellow-500/50 font-black transition active:scale-95 text-xs shadow-sm"
             >
-              <span>📋</span>
-              <span>{t.app.rules}</span>
+              📋
             </button>
 
             {onLeaveRoom && (
@@ -246,24 +263,13 @@ export const TableScreen: React.FC<TableScreenProps> = ({
                 type="button"
                 data-testid="leave-room-button"
                 onClick={onLeaveRoom}
-                className="px-2.5 py-1 text-xs rounded-full bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600/60 font-bold transition active:scale-95 flex items-center space-x-1 shadow-sm"
+                aria-label="Leave"
+                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-600/60 font-bold transition active:scale-95 text-xs shadow-sm"
               >
-                <span>🚪</span>
-                <span>退出</span>
+                🚪
               </button>
             )}
           </div>
-
-          {peerId && (
-            <button
-              type="button"
-              onClick={handleCopyInviteLink}
-              className="px-2.5 py-1 text-xs rounded-full bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/60 font-bold transition active:scale-95 flex items-center space-x-1 shadow-sm"
-            >
-              <span>🔗</span>
-              <span>{copiedLink ? t.app.copied : t.app.inviteLink}</span>
-            </button>
-          )}
         </div>
       </div>
 

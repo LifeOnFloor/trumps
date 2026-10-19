@@ -26,7 +26,7 @@ export const PRESETS: Record<PresetType, { title: string; desc: string; config: 
       sandstorm: false,
       miyakoOchi: true,
       gekokujo: false,
-      cardExchange: false,
+      cardExchange: true,
       prohibitedEndings: {
         joker: true,
         eight: true,
@@ -53,7 +53,7 @@ export const PRESETS: Record<PresetType, { title: string; desc: string; config: 
       sandstorm: false,
       miyakoOchi: true,
       gekokujo: false,
-      cardExchange: false,
+      cardExchange: true,
       prohibitedEndings: {
         joker: true,
         eight: true,

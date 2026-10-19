@@ -70,7 +70,7 @@ describe('PlayerHand Touch Slide Selection', () => {
     expect(onToggleSelect).toHaveBeenCalledWith('H_3');
   });
 
-  it('allows touch slide multi-selection across cards', () => {
+  it('does not select cards on touch slide to prevent accidental selection during scroll', () => {
     const onToggleSelect = vi.fn();
     render(
       <PlayerHand
@@ -82,17 +82,13 @@ describe('PlayerHand Touch Slide Selection', () => {
 
     const handContainer = screen.getByTestId('player-hand');
 
-    // Mock document.elementFromPoint
-    const cardEl = screen.getByTestId('card-D_3').closest('[data-card-id]');
-    document.elementFromPoint = vi.fn().mockReturnValue(cardEl);
-
     fireEvent.touchStart(handContainer);
     fireEvent.touchMove(handContainer, {
       touches: [{ clientX: 100, clientY: 200 }],
     });
     fireEvent.touchEnd(handContainer);
 
-    expect(onToggleSelect).toHaveBeenCalledWith('D_3');
+    expect(onToggleSelect).not.toHaveBeenCalled();
   });
 });
 

@@ -9,6 +9,7 @@ export interface SettingsModalProps {
   onToggleMute: () => void;
   onOpenRules: () => void;
   onLeaveRoom?: () => void;
+  peerId?: string;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -18,10 +19,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleMute,
   onOpenRules,
   onLeaveRoom,
+  peerId,
 }) => {
   const { t } = useTranslation();
+  const [copiedLink, setCopiedLink] = React.useState(false);
 
   if (!isOpen) return null;
+
+  const handleCopyInviteLink = () => {
+    if (peerId && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('room', peerId);
+      navigator.clipboard.writeText(url.toString());
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
 
   return (
     <div
@@ -98,6 +111,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </span>
             <span>➔</span>
           </button>
+
+          {/* Invite link button */}
+          {peerId && (
+            <button
+              type="button"
+              data-testid="settings-copy-invite-button"
+              onClick={handleCopyInviteLink}
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-emerald-900/60 hover:bg-emerald-800/80 border border-emerald-800 text-emerald-200 font-bold transition active:scale-95"
+            >
+              <span className="flex items-center space-x-1.5">
+                <span>🔗</span>
+                <span>{copiedLink ? t.app.copied : t.app.inviteLink}</span>
+              </span>
+              <span>{copiedLink ? '✓' : '📋'}</span>
+            </button>
+          )}
 
           {/* Leave Room button */}
           {onLeaveRoom && (

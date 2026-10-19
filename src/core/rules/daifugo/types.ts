@@ -23,6 +23,8 @@ export type PendingHandAction =
   | { readonly type: 'SEVEN_PASS'; readonly playerId: string; readonly targetPlayerId: string; readonly count: number }
   | { readonly type: 'TEN_DISCARD'; readonly playerId: string; readonly count: number };
 
+import type { TaxExchangeRecord } from './exchange.js';
+
 export interface DaifugoRuleState {
   readonly config: DaifugoConfig;
   readonly isRevolution: boolean;
@@ -36,6 +38,7 @@ export interface DaifugoRuleState {
   readonly rankings: readonly string[];
   readonly foulPlayerIds: readonly string[];
   readonly pot?: number;
+  readonly exchanges?: readonly TaxExchangeRecord[];
 }
 
 export type DaifugoAction =

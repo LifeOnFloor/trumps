@@ -12,7 +12,7 @@ import { createDeck, dealHands, shuffleDeck } from '../../utils/deck.js';
 import { calculateAnte } from '../../types/chips.js';
 import type { DaifugoConfig } from './config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from './config.js';
-import { executeTaxCardExchange } from './exchange.js';
+import { executeTaxCardExchange, type TaxExchangeRecord } from './exchange.js';
 import { settleChips } from './settlement.js';
 import type { DaifugoAction, DaifugoRuleState, PendingHandAction, PlayMeld } from './types.js';
 import {
@@ -95,9 +95,11 @@ export class DaifugoPlugin
     }
 
     // If previousRankings exists and cardExchange is enabled, execute tax card exchange
+    let exchanges: readonly TaxExchangeRecord[] = [];
     if (mergedConfig.cardExchange && options?.previousRankings && options.previousRankings.length > 0) {
-      const { nextPlayers } = executeTaxCardExchange(initialPlayers, options.previousRankings);
-      initialPlayers = nextPlayers;
+      const res = executeTaxCardExchange(initialPlayers, options.previousRankings);
+      initialPlayers = res.nextPlayers;
+      exchanges = res.exchanges;
     }
 
     // Find starting player: whoever has D_3, or fallback to player 0 (or previous Daihinmin)
@@ -140,6 +142,7 @@ export class DaifugoPlugin
       rankings: [],
       foulPlayerIds: [],
       pot: initialPot,
+      exchanges: exchanges.length > 0 ? exchanges : undefined,
     };
 
     return { context, ruleState };
@@ -522,11 +525,12 @@ export class DaifugoPlugin
           nextTurnPlayerId = this.findNextActivePlayerId(nextPlayers, playerId, nextTurnDirection, 0);
         }
       } else {
+        const isEffectiveRevAfter = nextRevolution !== nextElevenBack;
         const lockedSuits = checkSuitLock(
           currentMeld,
           ruleState.table.lastPlay,
           ruleState.table.lockedSuits,
-          isEffectiveRevBefore,
+          isEffectiveRevAfter,
           ruleState.config
         );
         if (!ruleState.table.lockedSuits && lockedSuits) {
@@ -538,6 +542,7 @@ export class DaifugoPlugin
           ruleState.table.lastPlay,
           ruleState.table.isSequenceLocked,
           isEffectiveRevBefore,
+          isEffectiveRevAfter,
           ruleState.config
         );
         if (!ruleState.table.isSequenceLocked && seqLock.isSequenceLocked) {
