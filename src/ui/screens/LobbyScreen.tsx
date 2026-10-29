@@ -276,7 +276,68 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             />
 
             {/* Action Buttons */}
-            {selectedGameId === 'klondike' ? (
+            {selectedGameId === 'shinkei-suijaku' ? (
+              <div className="space-y-3 pt-2">
+                {/* 1人で遊ぶ */}
+                <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-yellow-400/40 space-y-2 shadow-sm">
+                  <div className="text-xs font-black text-yellow-300 flex items-center space-x-1.5">
+                    <span>🧠</span>
+                    <span>一人で遊ぶ</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-300/80">
+                    52枚のカードでタイムアタック・手数記録に挑戦します。
+                  </p>
+                  <button
+                    type="button"
+                    data-testid="play-memory-solo-button"
+                    onClick={() => onStartSinglePlayerGame?.('shinkei-suijaku')}
+                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-gray-950 font-black text-sm shadow-md transition active:scale-95 flex items-center justify-center space-x-1.5"
+                  >
+                    <span>一人で遊ぶ（タイムアタック開始）</span>
+                  </button>
+                </div>
+
+                {/* オンラインで対戦する */}
+                <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-700/60 space-y-2.5 shadow-sm">
+                  <div className="text-xs font-black text-emerald-200 flex items-center space-x-1.5">
+                    <span>🌐</span>
+                    <span>オンラインで対戦する（1〜6人）</span>
+                  </div>
+                  <p className="text-[11px] text-emerald-300/80">
+                    部屋を作って友達を招待するか、友達の部屋番号を入力して対戦します。
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <button
+                      type="button"
+                      disabled={isConnecting}
+                      data-testid="create-room-button"
+                      onClick={() => {
+                        setMode('host');
+                        onStartHost(playerName, config, 'shinkei-suijaku');
+                      }}
+                      className="py-3 px-3 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-xs shadow-md transition active:scale-95 flex items-center justify-center space-x-1 disabled:opacity-50"
+                    >
+                      <span>👑</span>
+                      <span>部屋をつくる</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="join-room-button"
+                      onClick={() => {
+                        setMode('client');
+                        if (playerName === '#1') {
+                          setPlayerName('#2');
+                        }
+                      }}
+                      className="py-3 px-3 rounded-xl bg-emerald-800 hover:bg-emerald-700 text-white font-black text-xs shadow border border-emerald-600/70 transition active:scale-95 flex items-center justify-center space-x-1"
+                    >
+                      <span>🚪</span>
+                      <span>部屋に入る</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : selectedGameId === 'klondike' ? (
               <div className="pt-2">
                 <button
                   type="button"
@@ -320,28 +381,6 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     <span>{t.lobby.joinRoom}</span>
                   </button>
                 </div>
-
-                {selectedGameId === 'shinkei-suijaku' && (
-                  <button
-                    type="button"
-                    data-testid="play-memory-solo-button"
-                    onClick={() => onStartSinglePlayerGame?.('shinkei-suijaku')}
-                    className="w-full py-3 px-4 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 border border-yellow-500/50 text-yellow-300 font-bold text-xs shadow transition active:scale-95 flex items-center justify-center space-x-1.5"
-                  >
-                    <span>🧠</span>
-                    <span>神経衰弱を1人で遊ぶ（タイムアタック）</span>
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  data-testid="quick-solitaire-button"
-                  onClick={() => onStartSinglePlayerGame?.('klondike')}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 border border-yellow-500/40 text-yellow-300 font-bold text-xs shadow transition active:scale-95 flex items-center justify-center space-x-1.5"
-                >
-                  <span>🎴</span>
-                  <span>1人用ゲーム（ソリティア）を遊ぶ</span>
-                </button>
               </div>
             )}
           </div>
@@ -350,6 +389,28 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
         {/* MODE 2: HOST */}
         {mode === 'host' && (
           <div className="space-y-4">
+            {/* Room Header Info */}
+            <div className="flex items-center justify-between px-1 text-xs">
+              <span className="font-black text-yellow-300 flex items-center space-x-1.5">
+                <span>{selectedGameId === 'shinkei-suijaku' ? '🧠' : '👑'}</span>
+                <span>
+                  {selectedGameId === 'shinkei-suijaku'
+                    ? '神経衰弱ルーム（1〜6人対応）'
+                    : '大富豪ルーム（3〜8人対応）'}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('select');
+                  onLeaveRoom?.();
+                }}
+                className="text-[11px] text-emerald-300 hover:text-white underline font-bold"
+              >
+                ゲーム選択に戻る
+              </button>
+            </div>
+
             {/* Invite Link & Peer ID Box */}
             <div className="p-3.5 rounded-2xl bg-emerald-950/90 border border-yellow-500/40 shadow-inner space-y-2">
               <div className="flex items-center justify-between text-xs">
@@ -378,7 +439,22 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
               </div>
             </div>
 
-            {/* Chips Mode Toggle & Rich Settings */}
+            {selectedGameId === 'shinkei-suijaku' ? (
+              <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-700/60 text-xs space-y-2.5">
+                <div className="font-black text-yellow-300 flex items-center space-x-1.5">
+                  <span>📜</span>
+                  <span>神経衰弱 ルール案内</span>
+                </div>
+                <div className="text-[11px] text-emerald-200/90 leading-relaxed space-y-1">
+                  <div>・トランプ標準52枚（ジョーカーなし）を使用します。</div>
+                  <div>・手番で2枚めくり、同じ数字（ランク）ならペア獲得で連続手番！</div>
+                  <div>・外れたらカードが伏せ直され、次のプレイヤーへ手番が回ります。</div>
+                  <div>・全ペア獲得時に最も多くペアを取ったプレイヤーが勝利です。</div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Chips Mode Toggle & Rich Settings */}
             <div className={`p-3.5 rounded-2xl border transition-all ${
               config.chipsMode
                 ? 'bg-emerald-950/90 border-yellow-500/50 shadow-lg'
@@ -715,12 +791,20 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                 ))}
               </div>
             </div>
+            </>
+            )}
 
             {/* Participant List */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-extrabold text-emerald-300">
-                <span>{t.lobby.playersCount} ({players.length}/8)</span>
-                <span className="text-[11px] text-yellow-400">{t.lobby.minPlayersToStart}</span>
+                <span>
+                  {t.lobby.playersCount} ({players.length}/{selectedGameId === 'shinkei-suijaku' ? 6 : 8})
+                </span>
+                <span className="text-[11px] text-yellow-400">
+                  {selectedGameId === 'shinkei-suijaku'
+                    ? '1人以上で開始可能'
+                    : t.lobby.minPlayersToStart}
+                </span>
               </div>
               <div className="max-h-24 overflow-y-auto space-y-1.5 scrollbar-thin">
                 {players.map((p, idx) => (
@@ -745,15 +829,23 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             {/* Start Button */}
             <button
               type="button"
-              disabled={players.length < 3 || isConnecting}
+              disabled={
+                selectedGameId === 'shinkei-suijaku'
+                  ? players.length < 1 || isConnecting
+                  : players.length < 3 || isConnecting
+              }
               onClick={() => onStartGame(config)}
               className={`w-full py-3.5 rounded-2xl font-black text-sm shadow-xl transition active:scale-95 ${
-                players.length >= 3 && !isConnecting
+                (selectedGameId === 'shinkei-suijaku' ? players.length >= 1 : players.length >= 3) && !isConnecting
                   ? 'bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 hover:to-amber-400 text-gray-950 ring-2 ring-yellow-300 shadow-yellow-500/30'
                   : 'bg-emerald-950/80 text-gray-400 border border-emerald-800 cursor-not-allowed opacity-60'
               }`}
             >
-              {players.length >= 3 ? `${t.lobby.startGame} (${players.length})` : `${t.lobby.waitingPlayers} (${players.length}/3...)`}
+              {selectedGameId === 'shinkei-suijaku'
+                ? `神経衰弱を開始する (${players.length}人参加中)`
+                : players.length >= 3
+                ? `${t.lobby.startGame} (${players.length})`
+                : `${t.lobby.waitingPlayers} (${players.length}/3...)`}
             </button>
           </div>
         )}

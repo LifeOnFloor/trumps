@@ -94,4 +94,73 @@ describe('LobbyScreen Component', () => {
     expect(screen.getByTestId('rules-modal')).toBeInTheDocument();
     expect(screen.getByText('現在のルール設定')).toBeInTheDocument();
   });
+
+  it('神経衰弱選択時は一人で遊ぶと対戦するが分離され、他ゲーム選択肢が表示されないこと', () => {
+    const handleStartSolo = vi.fn();
+    const handleStartHost = vi.fn();
+
+    render(
+      <LobbyScreen
+        isHost={false}
+        peerId=""
+        players={[]}
+        error={null}
+        onStartHost={handleStartHost}
+        onJoinClient={vi.fn()}
+        onStartGame={vi.fn()}
+        onStartSinglePlayerGame={handleStartSolo}
+      />
+    );
+
+    // Select memory game
+    fireEvent.click(screen.getByText('神経衰弱'));
+
+    // "一人で遊ぶ" and "オンラインで対戦する" should be present
+    expect(screen.getByText('一人で遊ぶ')).toBeInTheDocument();
+    expect(screen.getByTestId('play-memory-solo-button')).toBeInTheDocument();
+    expect(screen.getByText('オンラインで対戦する（1〜6人）')).toBeInTheDocument();
+    expect(screen.getByTestId('create-room-button')).toBeInTheDocument();
+    expect(screen.getByTestId('join-room-button')).toBeInTheDocument();
+
+    // Klondike button should NOT be present
+    expect(screen.queryByTestId('quick-solitaire-button')).not.toBeInTheDocument();
+
+    // Clicking solo button calls onStartSinglePlayerGame with shinkei-suijaku
+    fireEvent.click(screen.getByTestId('play-memory-solo-button'));
+    expect(handleStartSolo).toHaveBeenCalledWith('shinkei-suijaku');
+  });
+
+  it('神経衰弱でホスト画面に入ると大富豪用設定は非表示で、神経衰弱ルールが表示され1人以上で開始可能であること', () => {
+    const handleStartGame = vi.fn();
+
+    render(
+      <LobbyScreen
+        isHost={true}
+        peerId="host-memory-1"
+        players={[{ id: 'p1', name: 'Player 1' }]}
+        error={null}
+        onStartHost={vi.fn()}
+        onJoinClient={vi.fn()}
+        onStartGame={handleStartGame}
+      />
+    );
+
+    // Select memory game then create room
+    fireEvent.click(screen.getByText('神経衰弱'));
+    fireEvent.click(screen.getByTestId('create-room-button'));
+
+    // Memory rules explanation should be displayed
+    expect(screen.getByText('神経衰弱 ルール案内')).toBeInTheDocument();
+    expect(screen.queryByTestId('chips-mode-row')).not.toBeInTheDocument();
+
+    // Should indicate 1 person minimum to start
+    expect(screen.getByText('1人以上で開始可能')).toBeInTheDocument();
+
+    // Start button should be enabled with 1 player
+    const startButton = screen.getByRole('button', { name: /神経衰弱を開始する/ });
+    expect(startButton).toBeEnabled();
+
+    fireEvent.click(startButton);
+    expect(handleStartGame).toHaveBeenCalledTimes(1);
+  });
 });
