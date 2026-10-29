@@ -3,11 +3,15 @@ import { GAME_CATALOG } from '../../src/catalog/games.js';
 import { filterGameCatalog } from '../../src/catalog/search.js';
 
 describe('Game Catalog Search and Filter', () => {
-  it('デフォルトで全件が返り、プレイ可能（大富豪）が先頭にソートされること', () => {
+  it('デフォルトで全件が返り、プレイ可能ゲームが先頭にソートされること', () => {
     const results = filterGameCatalog(GAME_CATALOG);
     expect(results.length).toBe(GAME_CATALOG.length);
-    expect(results[0]?.id).toBe('daifugo');
+    const playableGames = results.filter((g) => g.isPlayable);
+    expect(playableGames.length).toBeGreaterThanOrEqual(1);
+    expect(playableGames.map((g) => g.id)).toContain('daifugo');
+    expect(playableGames.map((g) => g.id)).toContain('klondike');
     expect(results[0]?.isPlayable).toBe(true);
+    expect(results[1]?.isPlayable).toBe(true);
   });
 
   it('キーワード検索（日本語・英語・タグ）が正しく動作すること', () => {

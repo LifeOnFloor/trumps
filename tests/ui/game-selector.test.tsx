@@ -20,7 +20,7 @@ describe('GameSelector Component', () => {
 
     expect(screen.getByPlaceholderText(/ゲーム名、ルール、タグで検索/)).toBeInTheDocument();
     expect(screen.getByText('大富豪')).toBeInTheDocument();
-    expect(screen.getByText('PLAYABLE')).toBeInTheDocument();
+    expect(screen.getAllByText('PLAYABLE').length).toBeGreaterThanOrEqual(1);
   });
 
   it('検索バーに入力するとインクリメンタル検索でゲームが絞り込まれること', () => {
