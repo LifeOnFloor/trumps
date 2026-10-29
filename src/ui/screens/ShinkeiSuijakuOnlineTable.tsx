@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { ShinkeiSuijakuRuleState } from '../../core/rules/shinkei-suijaku/types.js';
 import type { Suit, Rank } from '../../core/types/card.js';
 import { AdBannerContainer } from '../components/AdBannerContainer.js';
+import { RulesModal } from '../components/RulesModal.js';
 import {
   playCardPlaySound,
   playTapSound,
@@ -59,6 +60,7 @@ export const ShinkeiSuijakuOnlineTable: React.FC<ShinkeiSuijakuOnlineTableProps>
   onLeaveRoom,
 }) => {
   const [isMuted, setIsMuted] = React.useState(isAudioMuted());
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const autoNextTurnTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { context, ruleState } = state;
@@ -108,6 +110,13 @@ export const ShinkeiSuijakuOnlineTable: React.FC<ShinkeiSuijakuOnlineTableProps>
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-teal-950 text-white flex flex-col items-center select-none pb-8">
+      {/* Rules Modal */}
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        gameId="shinkei-suijaku"
+        onClose={() => setIsRulesModalOpen(false)}
+      />
+
       {/* Top Ad Banner (Disabled by default) */}
       <AdBannerContainer slotId="memory-online-top" />
 
@@ -136,6 +145,15 @@ export const ShinkeiSuijakuOnlineTable: React.FC<ShinkeiSuijakuOnlineTableProps>
               ROOM: {peerId.slice(-6)}
             </span>
           )}
+          <button
+            type="button"
+            data-testid="memory-online-rules-button"
+            onClick={() => setIsRulesModalOpen(true)}
+            className="p-1.5 px-2.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-700/50 text-yellow-300 text-xs font-bold transition active:scale-95 flex items-center space-x-1"
+          >
+            <span>📋</span>
+            <span>ルール</span>
+          </button>
           <button
             type="button"
             onClick={() => {

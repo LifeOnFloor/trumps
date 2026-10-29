@@ -194,6 +194,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
       {/* Rules Modal */}
       <RulesModal
         isOpen={isRulesModalOpen}
+        gameId={selectedGameId}
         config={config}
         onClose={() => setIsRulesModalOpen(false)}
       />

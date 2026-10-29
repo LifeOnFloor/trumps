@@ -163,4 +163,30 @@ describe('LobbyScreen Component', () => {
     fireEvent.click(startButton);
     expect(handleStartGame).toHaveBeenCalledTimes(1);
   });
+
+  it('神経衰弱選択時にルールボタンを押すと、神経衰弱のルールモーダルが表示されること', () => {
+    render(
+      <LobbyScreen
+        isHost={false}
+        peerId=""
+        players={[]}
+        error={null}
+        onStartHost={vi.fn()}
+        onJoinClient={vi.fn()}
+        onStartGame={vi.fn()}
+      />
+    );
+
+    // Select memory game
+    fireEvent.click(screen.getByText('神経衰弱'));
+
+    // Click rules button
+    fireEvent.click(screen.getByTestId('open-rules-button'));
+
+    // Memory rules should be shown inside modal
+    expect(screen.getByTestId('rules-modal')).toBeInTheDocument();
+    expect(screen.getByText('神経衰弱 ルール')).toBeInTheDocument();
+    expect(screen.getByText('ゲームの目的')).toBeInTheDocument();
+    expect(screen.queryByText('8切り')).not.toBeInTheDocument();
+  });
 });

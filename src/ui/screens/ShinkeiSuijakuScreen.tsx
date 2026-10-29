@@ -7,6 +7,7 @@ import type {
 } from '../../core/rules/shinkei-suijaku/types.js';
 import type { Suit, Rank } from '../../core/types/card.js';
 import { AdBannerContainer } from '../components/AdBannerContainer.js';
+import { RulesModal } from '../components/RulesModal.js';
 import {
   playCardPlaySound,
   playTapSound,
@@ -50,6 +51,7 @@ export const ShinkeiSuijakuScreen: React.FC<ShinkeiSuijakuScreenProps> = ({
   const [isMuted, setIsMuted] = useState(isAudioMuted());
   const [seconds, setSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   // Auto-flip timer ref for mismatched cards
   const autoFlipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,6 +133,13 @@ export const ShinkeiSuijakuScreen: React.FC<ShinkeiSuijakuScreenProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-teal-950 text-white flex flex-col items-center select-none pb-8">
+      {/* Rules Modal */}
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        gameId="shinkei-suijaku"
+        onClose={() => setIsRulesModalOpen(false)}
+      />
+
       {/* Top Ad Banner (Disabled by default) */}
       <AdBannerContainer slotId="shinkei-suijaku-top" />
 
@@ -153,6 +162,15 @@ export const ShinkeiSuijakuScreen: React.FC<ShinkeiSuijakuScreenProps> = ({
 
         {/* Controls & Sound */}
         <div className="flex items-center space-x-2 text-xs">
+          <button
+            type="button"
+            data-testid="memory-rules-button"
+            onClick={() => setIsRulesModalOpen(true)}
+            className="p-1.5 px-2.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-700/50 text-yellow-300 text-xs font-bold transition active:scale-95 flex items-center space-x-1"
+          >
+            <span>📋</span>
+            <span>ルール</span>
+          </button>
           <button
             type="button"
             onClick={() => {

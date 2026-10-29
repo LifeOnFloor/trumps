@@ -5,6 +5,7 @@ import type { KlondikeAction, KlondikeRuleState } from '../../core/rules/klondik
 import type { RegularCard, Suit } from '../../core/types/card.js';
 import { CardView } from '../components/CardView.js';
 import { AdBannerContainer } from '../components/AdBannerContainer.js';
+import { RulesModal } from '../components/RulesModal.js';
 import {
   playCardPlaySound,
   playTapSound,
@@ -37,6 +38,7 @@ export const KlondikeScreen: React.FC<KlondikeScreenProps> = ({
 
   const [stateVersion, setStateVersion] = useState(0);
   const [isMuted, setIsMuted] = useState(isAudioMuted());
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   // Selection state: { source: 'waste' | 'tableau', tableauIndex?: number, cardIndex?: number, cardId: string }
   const [selectedSource, setSelectedSource] = useState<{
@@ -195,6 +197,13 @@ export const KlondikeScreen: React.FC<KlondikeScreenProps> = ({
       data-testid="klondike-screen"
       className="min-h-screen w-full flex flex-col items-center bg-[#073627] text-white p-2 select-none overflow-x-hidden font-sans"
     >
+      {/* Rules Modal */}
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        gameId="klondike"
+        onClose={() => setIsRulesModalOpen(false)}
+      />
+
       {/* Top Header Bar */}
       <div className="w-full max-w-4xl flex items-center justify-between px-2 py-1.5 border-b border-emerald-800/60 mb-1">
         <div className="flex items-center space-x-2">
@@ -217,6 +226,15 @@ export const KlondikeScreen: React.FC<KlondikeScreenProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            data-testid="klondike-rules-button"
+            onClick={() => setIsRulesModalOpen(true)}
+            className="px-2.5 py-1 text-xs rounded-xl bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-700/60 text-yellow-300 font-bold transition active:scale-95 flex items-center space-x-1"
+          >
+            <span>📋</span>
+            <span>ルール</span>
+          </button>
           <button
             type="button"
             data-testid="klondike-sound-toggle"
