@@ -3,10 +3,12 @@ import type { SanitizedState, GameEvent } from '../../core/types/engine.js';
 import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from '../../core/rules/daifugo/config.js';
 import { decodeConfigFromUrlParam } from '../../core/rules/daifugo/url.js';
-import type { DaifugoRuleState } from '../../core/rules/daifugo/types.js';
+import { ShinkeiSuijakuPlugin, DEFAULT_SHINKEI_SUIJAKU_CONFIG } from '../../core/rules/shinkei-suijaku/index.js';
+import { DaifugoPlugin } from '../../core/rules/daifugo/index.js';
 import { PeerJsTransport } from '../../network/peerjs-transport.js';
 import { HostSession } from '../../network/host-session.js';
 import { ClientSession } from '../../network/client-session.js';
+import type { AnyGameAction, AnyGameRuleState } from '../../network/types.js';
 import { useTranslation } from '../../i18n/context.js';
 
 function getOrCreatePlayerId(prefix: string): string {
@@ -34,7 +36,7 @@ export function useGameSession() {
   const [myPlayerId, setMyPlayerId] = useState<string>('');
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
   const [disconnectedPlayerIds, setDisconnectedPlayerIds] = useState<string[]>([]);
-  const [roomConfig, setRoomConfig] = useState<DaifugoConfig>(() => {
+  const [roomConfig, setRoomConfig] = useState<any>(() => {
     if (typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
@@ -49,7 +51,7 @@ export function useGameSession() {
     }
     return DEFAULT_DAIFUGO_CONFIG;
   });
-  const [state, setState] = useState<SanitizedState<DaifugoRuleState> | null>(null);
+  const [state, setState] = useState<SanitizedState<AnyGameRuleState> | null>(null);
   const [recentEvents, setRecentEvents] = useState<readonly GameEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +59,11 @@ export function useGameSession() {
   const clientSessionRef = useRef<ClientSession | null>(null);
 
   const startHost = useCallback(
-    async (playerName: string, initialConfig: Partial<DaifugoConfig> = DEFAULT_DAIFUGO_CONFIG) => {
+    async (
+      playerName: string,
+      initialConfig: any = DEFAULT_DAIFUGO_CONFIG,
+      gameId: string = 'daifugo'
+    ) => {
       if (isConnecting || hostSessionRef.current) return;
       setIsConnecting(true);
       setError(null);
@@ -69,7 +75,17 @@ export function useGameSession() {
         const hostPlayer = { id: getOrCreatePlayerId('p_host'), name: playerName };
         setMyPlayerId(hostPlayer.id);
 
-        const session = new HostSession(transport, hostPlayer, { config: initialConfig });
+        const plugin =
+          gameId === 'shinkei-suijaku'
+            ? new ShinkeiSuijakuPlugin()
+            : new DaifugoPlugin();
+
+        const config =
+          gameId === 'shinkei-suijaku'
+            ? { ...DEFAULT_SHINKEI_SUIJAKU_CONFIG, ...(initialConfig ?? {}) }
+            : { ...DEFAULT_DAIFUGO_CONFIG, ...(initialConfig ?? {}) };
+
+        const session = new HostSession(transport, hostPlayer, { config, plugin });
         hostSessionRef.current = session;
         setPlayers([...session.getPlayers()]);
         setRoomConfig(session.getConfig());
@@ -230,6 +246,22 @@ export function useGameSession() {
     }
   }, []);
 
+  const dispatchFlip = useCallback((cardIndex: number) => {
+    if (hostSessionRef.current) {
+      hostSessionRef.current.dispatchHostAction({ type: 'FLIP', cardIndex });
+    } else if (clientSessionRef.current) {
+      clientSessionRef.current.dispatch({ type: 'FLIP', cardIndex });
+    }
+  }, []);
+
+  const dispatchNextTurn = useCallback(() => {
+    if (hostSessionRef.current) {
+      hostSessionRef.current.dispatchHostAction({ type: 'NEXT_TURN' });
+    } else if (clientSessionRef.current) {
+      clientSessionRef.current.dispatch({ type: 'NEXT_TURN' });
+    }
+  }, []);
+
   const leaveRoom = useCallback(() => {
     if (hostSessionRef.current) {
       hostSessionRef.current.leaveRoom();
@@ -292,5 +324,7 @@ export function useGameSession() {
     dispatchPass,
     dispatchPassCards,
     dispatchDiscardCards,
+    dispatchFlip,
+    dispatchNextTurn,
   };
 }

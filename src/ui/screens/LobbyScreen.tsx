@@ -18,7 +18,7 @@ export interface LobbyScreenProps {
   roomConfig?: DaifugoConfig;
   error: string | null;
   isConnecting?: boolean;
-  onStartHost: (playerName: string, config: DaifugoConfig) => void;
+  onStartHost: (playerName: string, config: any, gameId?: string) => void;
   onJoinClient: (hostPeerId: string, playerName: string) => void;
   onUpdateConfig?: (config: DaifugoConfig) => void;
   onStartGame: (config?: DaifugoConfig) => void;
@@ -288,27 +288,16 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   <span>ソリティアを1人でプレイする</span>
                 </button>
               </div>
-            ) : selectedGameId === 'shinkei-suijaku' ? (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  data-testid="play-memory-button"
-                  onClick={() => onStartSinglePlayerGame?.('shinkei-suijaku')}
-                  className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-300 text-gray-950 font-black text-base shadow-xl shadow-yellow-500/30 transition active:scale-95 flex items-center justify-center space-x-2"
-                >
-                  <span className="text-xl">🧠</span>
-                  <span>神経衰弱をプレイする</span>
-                </button>
-              </div>
             ) : (
               <div className="space-y-2.5 pt-2">
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     disabled={isConnecting}
+                    data-testid="create-room-button"
                     onClick={() => {
                       setMode('host');
-                      onStartHost(playerName, config);
+                      onStartHost(playerName, config, selectedGameId);
                     }}
                     className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 flex items-center justify-center space-x-1.5 disabled:opacity-50"
                   >
@@ -318,6 +307,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
                   <button
                     type="button"
+                    data-testid="join-room-button"
                     onClick={() => {
                       setMode('client');
                       if (playerName === '#1') {
@@ -330,6 +320,18 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                     <span>{t.lobby.joinRoom}</span>
                   </button>
                 </div>
+
+                {selectedGameId === 'shinkei-suijaku' && (
+                  <button
+                    type="button"
+                    data-testid="play-memory-solo-button"
+                    onClick={() => onStartSinglePlayerGame?.('shinkei-suijaku')}
+                    className="w-full py-3 px-4 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 border border-yellow-500/50 text-yellow-300 font-bold text-xs shadow transition active:scale-95 flex items-center justify-center space-x-1.5"
+                  >
+                    <span>🧠</span>
+                    <span>神経衰弱を1人で遊ぶ（タイムアタック）</span>
+                  </button>
+                )}
 
                 <button
                   type="button"

@@ -1,23 +1,27 @@
 import type { GameEvent, SanitizedState } from '../core/types/engine.js';
-import type { DaifugoAction, DaifugoRuleState } from '../core/rules/daifugo/types.js';
-import type { DaifugoConfig } from '../core/rules/daifugo/config.js';
 import type { ITransport } from './transport.js';
-import type { ClientMessage, HostMessage } from './types.js';
+import type {
+  AnyGameAction,
+  AnyGameConfig,
+  AnyGameRuleState,
+  ClientMessage,
+  HostMessage,
+} from './types.js';
 
-export class ClientSession {
+export class ClientSession<TRuleState = any, TConfig = any> {
   private readonly transport: ITransport;
   private readonly player: { id: string; name: string };
   private hostPeerId: string | null = null;
   private players: { id: string; name: string }[] = [];
-  private currentState: SanitizedState<DaifugoRuleState> | null = null;
-  private currentConfig: DaifugoConfig | null = null;
+  private currentState: SanitizedState<TRuleState> | null = null;
+  private currentConfig: TConfig | null = null;
 
-  private stateChangeListeners: ((state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]) => void)[] = [];
+  private stateChangeListeners: ((state: SanitizedState<TRuleState>, events: readonly GameEvent[]) => void)[] = [];
   private actionRejectedListeners: ((reason: string) => void)[] = [];
   private playerDisconnectedListeners: ((playerId: string) => void)[] = [];
   private playerJoinedListeners: ((player: { id: string; name: string }) => void)[] = [];
   private roomJoinedListeners: ((players: readonly { id: string; name: string }[]) => void)[] = [];
-  private configUpdatedListeners: ((config: DaifugoConfig) => void)[] = [];
+  private configUpdatedListeners: ((config: TConfig) => void)[] = [];
   private hostDisconnectedListeners: (() => void)[] = [];
 
   constructor(transport: ITransport, player: { id: string; name: string }) {
@@ -30,11 +34,11 @@ export class ClientSession {
     return this.player;
   }
 
-  getState(): SanitizedState<DaifugoRuleState> | null {
+  getState(): SanitizedState<TRuleState> | null {
     return this.currentState;
   }
 
-  getConfig(): DaifugoConfig | null {
+  getConfig(): TConfig | null {
     return this.currentConfig;
   }
 
@@ -53,7 +57,7 @@ export class ClientSession {
     this.transport.send(hostPeerId, joinMsg);
   }
 
-  dispatch(action: DaifugoAction): void {
+  dispatch(action: AnyGameAction): void {
     if (!this.hostPeerId) {
       throw new Error('Not connected to host');
     }
@@ -74,7 +78,7 @@ export class ClientSession {
   }
 
   onStateChange(
-    listener: (state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]) => void
+    listener: (state: SanitizedState<TRuleState>, events: readonly GameEvent[]) => void
   ): () => void {
     this.stateChangeListeners.push(listener);
     return () => {
@@ -110,7 +114,7 @@ export class ClientSession {
     };
   }
 
-  onConfigUpdated(listener: (config: DaifugoConfig) => void): () => void {
+  onConfigUpdated(listener: (config: TConfig) => void): () => void {
     this.configUpdatedListeners.push(listener);
     return () => {
       this.configUpdatedListeners = this.configUpdatedListeners.filter((l) => l !== listener);
@@ -133,8 +137,8 @@ export class ClientSession {
         case 'ROOM_JOINED':
           this.players = msg.players;
           if (msg.config) {
-            this.currentConfig = msg.config;
-            this.configUpdatedListeners.forEach((l) => l(msg.config));
+            this.currentConfig = msg.config as TConfig;
+            this.configUpdatedListeners.forEach((l) => l(msg.config as TConfig));
           }
           this.roomJoinedListeners.forEach((l) => l(this.players));
           break;
@@ -147,26 +151,26 @@ export class ClientSession {
           break;
 
         case 'CONFIG_UPDATED':
-          this.currentConfig = msg.config;
-          this.configUpdatedListeners.forEach((l) => l(msg.config));
+          this.currentConfig = msg.config as TConfig;
+          this.configUpdatedListeners.forEach((l) => l(msg.config as TConfig));
           break;
 
         case 'GAME_STARTED':
-          this.currentState = msg.state;
-          if (msg.state.ruleState?.config) {
-            this.currentConfig = msg.state.ruleState.config;
-            this.configUpdatedListeners.forEach((l) => l(msg.state.ruleState.config));
+          this.currentState = msg.state as any;
+          if (msg.state.ruleState && (msg.state.ruleState as any).config) {
+            this.currentConfig = (msg.state.ruleState as any).config;
+            this.configUpdatedListeners.forEach((l) => l((msg.state.ruleState as any).config));
           }
-          this.stateChangeListeners.forEach((l) => l(msg.state, [{ type: 'GAME_STARTED' }]));
+          this.stateChangeListeners.forEach((l) => l(msg.state as any, [{ type: 'GAME_STARTED' }]));
           break;
 
         case 'SYNC_STATE':
-          this.currentState = msg.state;
-          if (msg.state.ruleState?.config) {
-            this.currentConfig = msg.state.ruleState.config;
-            this.configUpdatedListeners.forEach((l) => l(msg.state.ruleState.config));
+          this.currentState = msg.state as any;
+          if (msg.state.ruleState && (msg.state.ruleState as any).config) {
+            this.currentConfig = (msg.state.ruleState as any).config;
+            this.configUpdatedListeners.forEach((l) => l((msg.state.ruleState as any).config));
           }
-          this.stateChangeListeners.forEach((l) => l(msg.state, msg.events));
+          this.stateChangeListeners.forEach((l) => l(msg.state as any, msg.events));
           break;
 
         case 'ACTION_REJECTED':

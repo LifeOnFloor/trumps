@@ -26,4 +26,5 @@ export * from './ui/screens/LobbyScreen.js';
 export * from './ui/screens/TableScreen.js';
 export * from './ui/screens/KlondikeScreen.js';
 export * from './ui/screens/ShinkeiSuijakuScreen.js';
+export * from './ui/screens/ShinkeiSuijakuOnlineTable.js';
 export * from './ui/App.js';

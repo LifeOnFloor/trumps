@@ -37,14 +37,17 @@ describe('ShinkeiSuijakuScreen Component', () => {
     expect(handleBack).toHaveBeenCalledTimes(1);
   });
 
-  it('1人プレイと2人対戦モードの切り替えができること', () => {
+  it('リセットボタンを押すとカード状態と手数が初期化されること', () => {
     const handleBack = vi.fn();
     render(<ShinkeiSuijakuScreen onBackToLobby={handleBack} />);
 
-    const switchButton = screen.getByRole('button', { name: /2人対戦/ });
-    fireEvent.click(switchButton);
+    const firstCard = screen.getByTestId('memory-card-0');
+    fireEvent.click(firstCard);
+    expect(firstCard).toHaveAttribute('data-flipped', 'true');
 
-    expect(screen.getByText(/プレイヤー 1/)).toBeInTheDocument();
-    expect(screen.getByText(/プレイヤー 2/)).toBeInTheDocument();
+    const resetButton = screen.getByRole('button', { name: /リセット/ });
+    fireEvent.click(resetButton);
+
+    expect(screen.getByTestId('memory-card-0')).toHaveAttribute('data-flipped', 'false');
   });
 });

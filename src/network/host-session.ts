@@ -3,13 +3,19 @@ import { GameRunner } from '../core/engine/game-runner.js';
 import { DaifugoPlugin } from '../core/rules/daifugo/index.js';
 import type { DaifugoConfig } from '../core/rules/daifugo/config.js';
 import { DEFAULT_DAIFUGO_CONFIG } from '../core/rules/daifugo/config.js';
-import type { DaifugoAction, DaifugoRuleState } from '../core/rules/daifugo/types.js';
 import type { ITransport } from './transport.js';
-import type { ClientMessage, HostMessage, NetworkPlayer } from './types.js';
+import type {
+  AnyGameAction,
+  AnyGameConfig,
+  AnyGameRuleState,
+  ClientMessage,
+  HostMessage,
+  NetworkPlayer,
+} from './types.js';
 
 export interface HostSessionOptions {
-  config?: Partial<DaifugoConfig>;
-  plugin?: CardGamePlugin<DaifugoConfig, DaifugoRuleState, DaifugoAction>;
+  config?: any;
+  plugin?: CardGamePlugin<any, any, any>;
 }
 
 export function sanitizeEventsForPlayer(
@@ -37,12 +43,12 @@ export function sanitizeEventsForPlayer(
 export class HostSession {
   private readonly transport: ITransport;
   private readonly hostPlayer: { id: string; name: string };
-  private readonly plugin: CardGamePlugin<DaifugoConfig, DaifugoRuleState, DaifugoAction>;
+  private readonly plugin: CardGamePlugin<any, any, any>;
 
-  private currentConfig: DaifugoConfig;
+  private currentConfig: any;
   private players: NetworkPlayer[] = [];
-  private gameRunner: GameRunner<DaifugoConfig, DaifugoRuleState, DaifugoAction> | null = null;
-  private stateChangeListeners: ((state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]) => void)[] = [];
+  private gameRunner: GameRunner<any, any, any> | null = null;
+  private stateChangeListeners: ((state: SanitizedState<any>, events: readonly GameEvent[]) => void)[] = [];
   private playersChangeListeners: ((players: readonly NetworkPlayer[]) => void)[] = [];
   private playerDisconnectedListeners: ((playerId: string, playerName: string) => void)[] = [];
 
@@ -55,12 +61,16 @@ export class HostSession {
     this.hostPlayer = hostPlayer;
     this.plugin = options.plugin ?? new DaifugoPlugin();
     this.currentConfig = {
-      ...DEFAULT_DAIFUGO_CONFIG,
+      ...(this.plugin.defaultConfig ?? {}),
       ...(options.config ?? {}),
-      prohibitedEndings: {
-        ...DEFAULT_DAIFUGO_CONFIG.prohibitedEndings,
-        ...(options.config?.prohibitedEndings ?? {}),
-      },
+      ...(this.plugin.id === 'daifugo'
+        ? {
+            prohibitedEndings: {
+              ...DEFAULT_DAIFUGO_CONFIG.prohibitedEndings,
+              ...(options.config?.prohibitedEndings ?? {}),
+            },
+          }
+        : {}),
     };
 
     // Register host as first player
@@ -79,18 +89,22 @@ export class HostSession {
     this.gameRunner = null;
   }
 
-  getConfig(): DaifugoConfig {
+  getConfig(): any {
     return this.currentConfig;
   }
 
-  updateConfig(configPartial: Partial<DaifugoConfig>): void {
+  updateConfig(configPartial: any): void {
     this.currentConfig = {
       ...this.currentConfig,
       ...configPartial,
-      prohibitedEndings: {
-        ...this.currentConfig.prohibitedEndings,
-        ...(configPartial.prohibitedEndings ?? {}),
-      },
+      ...(this.plugin.id === 'daifugo'
+        ? {
+            prohibitedEndings: {
+              ...(this.currentConfig.prohibitedEndings ?? {}),
+              ...(configPartial.prohibitedEndings ?? {}),
+            },
+          }
+        : {}),
     };
 
     // Broadcast updated config to all connected clients
@@ -108,17 +122,17 @@ export class HostSession {
     return this.players;
   }
 
-  getGameRunner(): GameRunner<DaifugoConfig, DaifugoRuleState, DaifugoAction> | null {
+  getGameRunner(): GameRunner<any, any, any> | null {
     return this.gameRunner;
   }
 
-  getHostState(): SanitizedState<DaifugoRuleState> | null {
+  getHostState(): SanitizedState<any> | null {
     if (!this.gameRunner) return null;
     return this.gameRunner.getSanitizedStateForPlayer(this.hostPlayer.id);
   }
 
   onStateChange(
-    listener: (state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]) => void
+    listener: (state: SanitizedState<any>, events: readonly GameEvent[]) => void
   ): () => void {
     this.stateChangeListeners.push(listener);
     return () => {
@@ -208,7 +222,7 @@ export class HostSession {
     }
   }
 
-  dispatchHostAction(action: DaifugoAction): void {
+  dispatchHostAction(action: AnyGameAction): void {
     this.handleDispatchAction(this.transport.peerId, this.hostPlayer.id, action);
   }
 
@@ -301,7 +315,7 @@ export class HostSession {
     }
   }
 
-  private handleDispatchAction(fromPeerId: string, playerId: string, action: DaifugoAction): void {
+  private handleDispatchAction(fromPeerId: string, playerId: string, action: AnyGameAction): void {
     if (!this.gameRunner) {
       this.sendToPeer(fromPeerId, { type: 'ACTION_REJECTED', reason: 'Game has not started' });
       return;
@@ -398,7 +412,7 @@ export class HostSession {
     this.transport.send(peerId, message);
   }
 
-  private notifyStateChange(state: SanitizedState<DaifugoRuleState>, events: readonly GameEvent[]): void {
+  private notifyStateChange(state: SanitizedState<any>, events: readonly GameEvent[]): void {
     for (const listener of this.stateChangeListeners) {
       listener(state, events);
     }

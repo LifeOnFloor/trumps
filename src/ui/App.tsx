@@ -5,6 +5,7 @@ import { LobbyScreen } from './screens/LobbyScreen.js';
 import { TableScreen } from './screens/TableScreen.js';
 import { KlondikeScreen } from './screens/KlondikeScreen.js';
 import { ShinkeiSuijakuScreen } from './screens/ShinkeiSuijakuScreen.js';
+import { ShinkeiSuijakuOnlineTable } from './screens/ShinkeiSuijakuOnlineTable.js';
 
 const MainAppContent: React.FC = () => {
   const [singlePlayerGame, setSinglePlayerGame] = React.useState<string | null>(null);
@@ -31,6 +32,8 @@ const MainAppContent: React.FC = () => {
     dispatchPass,
     dispatchPassCards,
     dispatchDiscardCards,
+    dispatchFlip,
+    dispatchNextTurn,
   } = useGameSession();
 
   if (singlePlayerGame === 'klondike') {
@@ -92,22 +95,37 @@ const MainAppContent: React.FC = () => {
         </div>
       )}
 
-      <TableScreen
-        state={state}
-        isHost={isHost}
-        myPlayerId={myPlayerId}
-        peerId={peerId}
-        disconnectedPlayerIds={disconnectedPlayerIds}
-        roomConfig={roomConfig}
-        recentEvents={recentEvents}
-        onPlay={dispatchPlay}
-        onPass={dispatchPass}
-        onPassCards={dispatchPassCards}
-        onDiscardCards={dispatchDiscardCards}
-        onNextRound={startNextRound}
-        onRestart={() => window.location.reload()}
-        onLeaveRoom={leaveRoom}
-      />
+      {state.context.gameId === 'shinkei-suijaku' ? (
+        <ShinkeiSuijakuOnlineTable
+          state={state as any}
+          myPlayerId={myPlayerId}
+          isHost={isHost}
+          peerId={peerId}
+          disconnectedPlayerIds={disconnectedPlayerIds}
+          recentEvents={recentEvents}
+          onFlip={dispatchFlip}
+          onNextTurn={dispatchNextTurn}
+          onNextRound={startNextRound}
+          onLeaveRoom={leaveRoom}
+        />
+      ) : (
+        <TableScreen
+          state={state as any}
+          isHost={isHost}
+          myPlayerId={myPlayerId}
+          peerId={peerId}
+          disconnectedPlayerIds={disconnectedPlayerIds}
+          roomConfig={roomConfig}
+          recentEvents={recentEvents}
+          onPlay={dispatchPlay}
+          onPass={dispatchPass}
+          onPassCards={dispatchPassCards}
+          onDiscardCards={dispatchDiscardCards}
+          onNextRound={startNextRound}
+          onRestart={() => window.location.reload()}
+          onLeaveRoom={leaveRoom}
+        />
+      )}
     </>
   );
 };

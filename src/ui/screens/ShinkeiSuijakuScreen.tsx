@@ -47,7 +47,6 @@ export const ShinkeiSuijakuScreen: React.FC<ShinkeiSuijakuScreenProps> = ({
   playerName = 'あなた',
 }) => {
   const plugin = useMemo(() => new ShinkeiSuijakuPlugin(), []);
-  const [playerMode, setPlayerMode] = useState<'single' | 'twoPlayer'>('single');
   const [isMuted, setIsMuted] = useState(isAudioMuted());
   const [seconds, setSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(true);
@@ -56,41 +55,14 @@ export const ShinkeiSuijakuScreen: React.FC<ShinkeiSuijakuScreenProps> = ({
   const autoFlipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const players = useMemo(() => {
-    if (playerMode === 'twoPlayer') {
-      return [
-        { id: 'p1', name: 'プレイヤー 1' },
-        { id: 'p2', name: 'プレイヤー 2' },
-      ];
-    }
     return [{ id: 'p1', name: playerName }];
-  }, [playerMode, playerName]);
+  }, [playerName]);
 
   const [runner, setRunner] = useState(() => {
     return new GameRunner(plugin, players);
   });
 
   const [stateVersion, setStateVersion] = useState(0);
-
-  // Update runner when playerMode changes
-  const switchPlayerMode = (mode: 'single' | 'twoPlayer') => {
-    playTapSound();
-    if (autoFlipTimeoutRef.current) {
-      clearTimeout(autoFlipTimeoutRef.current);
-      autoFlipTimeoutRef.current = null;
-    }
-    setPlayerMode(mode);
-    const newPlayers =
-      mode === 'twoPlayer'
-        ? [
-            { id: 'p1', name: 'プレイヤー 1' },
-            { id: 'p2', name: 'プレイヤー 2' },
-          ]
-        : [{ id: 'p1', name: playerName }];
-    setRunner(new GameRunner(plugin, newPlayers));
-    setSeconds(0);
-    setIsTimerRunning(true);
-    setStateVersion((v) => v + 1);
-  };
 
   const context = runner.getContext();
   const ruleState = runner.getRuleState();
@@ -179,33 +151,8 @@ export const ShinkeiSuijakuScreen: React.FC<ShinkeiSuijakuScreenProps> = ({
           </div>
         </div>
 
-        {/* Mode Toggle & Sound */}
+        {/* Controls & Sound */}
         <div className="flex items-center space-x-2 text-xs">
-          <div className="flex bg-emerald-950/80 rounded-xl p-0.5 border border-emerald-700/50">
-            <button
-              type="button"
-              onClick={() => switchPlayerMode('single')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition ${
-                playerMode === 'single'
-                  ? 'bg-yellow-400 text-gray-950 shadow-sm'
-                  : 'text-emerald-300 hover:text-white'
-              }`}
-            >
-              1人プレイ
-            </button>
-            <button
-              type="button"
-              onClick={() => switchPlayerMode('twoPlayer')}
-              className={`px-2.5 py-1 rounded-lg font-bold transition ${
-                playerMode === 'twoPlayer'
-                  ? 'bg-yellow-400 text-gray-950 shadow-sm'
-                  : 'text-emerald-300 hover:text-white'
-              }`}
-            >
-              2人対戦
-            </button>
-          </div>
-
           <button
             type="button"
             onClick={() => {
@@ -233,27 +180,6 @@ export const ShinkeiSuijakuScreen: React.FC<ShinkeiSuijakuScreenProps> = ({
             時間: <span className="text-emerald-300 font-mono font-bold">{Math.floor(seconds / 60)}:{(seconds % 60).toString().padStart(2, '0')}</span>
           </div>
         </div>
-
-        {playerMode === 'twoPlayer' && (
-          <div className="flex items-center space-x-2">
-            {context.players.map((p) => {
-              const isCurrentTurn = context.currentTurnPlayerId === p.id && !context.isGameOver;
-              return (
-                <div
-                  key={p.id}
-                  className={`px-2.5 py-1 rounded-xl text-xs transition flex items-center space-x-1.5 border ${
-                    isCurrentTurn
-                      ? 'bg-yellow-400 text-gray-950 border-yellow-300 font-black shadow-md scale-105'
-                      : 'bg-emerald-950/70 text-emerald-200 border-emerald-800/50 font-medium'
-                  }`}
-                >
-                  <span>{isCurrentTurn ? '👉' : '👤'}</span>
-                  <span>{p.name}: {ruleState.playerScores[p.id] ?? 0}</span>
-                </div>
-              );
-            })}
-          </div>
-        )}
 
         <button
           type="button"
@@ -328,16 +254,6 @@ export const ShinkeiSuijakuScreen: React.FC<ShinkeiSuijakuScreenProps> = ({
                 <span>合計手数</span>
                 <span className="font-bold text-yellow-300">{ruleState.turnCount} ターン</span>
               </div>
-              {playerMode === 'twoPlayer' && (
-                <div className="pt-2 border-t border-emerald-700/60 space-y-1">
-                  <div className="font-bold text-white mb-1">勝者</div>
-                  <div className="text-base font-black text-yellow-400">
-                    {context.winnerPlayerIds
-                      .map((id) => context.players.find((p) => p.id === id)?.name)
-                      .join(' & ')}
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="pt-2 flex flex-col space-y-2">
