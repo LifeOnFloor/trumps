@@ -288,6 +288,18 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
                   <span>ソリティアを1人でプレイする</span>
                 </button>
               </div>
+            ) : selectedGameId === 'shinkei-suijaku' ? (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  data-testid="play-memory-button"
+                  onClick={() => onStartSinglePlayerGame?.('shinkei-suijaku')}
+                  className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-300 text-gray-950 font-black text-base shadow-xl shadow-yellow-500/30 transition active:scale-95 flex items-center justify-center space-x-2"
+                >
+                  <span className="text-xl">🧠</span>
+                  <span>神経衰弱をプレイする</span>
+                </button>
+              </div>
             ) : (
               <div className="space-y-2.5 pt-2">
                 <div className="grid grid-cols-2 gap-3">

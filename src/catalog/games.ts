@@ -180,6 +180,25 @@ export const GAME_CATALOG: readonly GameMetadata[] = [
 
   // --- Matching / Rummy ---
   {
+    id: 'shinkei-suijaku',
+    name: { ja: '神経衰弱', en: 'Memory (Concentration)' },
+    subtitle: 'Concentration',
+    category: 'matching',
+    players: { min: 1, max: 6 },
+    hasChips: false,
+    isPlayable: true,
+    tags: ['神経衰弱', 'メモリー', 'ペア', '記憶', 'memory', 'concentration', 'matching'],
+    description: {
+      ja: '伏せられたカードから同じ数字のペアを当てる記憶力ゲーム。1人挑戦でも対戦でも楽しめます。',
+      en: 'Flip face-down cards to match pairs by rank. Test your memory solo or compete with friends.',
+    },
+    rulesSummary: {
+      ja: '手番で2枚めくり、同じ数字なら獲得して連続手番。揃わなければ相手に手番が移ります。',
+      en: 'Flip 2 cards per turn. If ranks match, claim them and take another turn. Most pairs wins.',
+    },
+    icon: '🧠',
+  },
+  {
     id: 'old-maid',
     name: { ja: 'ババ抜き', en: 'Old Maid' },
     subtitle: 'Old Maid',

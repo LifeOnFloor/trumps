@@ -4,6 +4,7 @@ import { useGameSession } from './hooks/use-game-session.js';
 import { LobbyScreen } from './screens/LobbyScreen.js';
 import { TableScreen } from './screens/TableScreen.js';
 import { KlondikeScreen } from './screens/KlondikeScreen.js';
+import { ShinkeiSuijakuScreen } from './screens/ShinkeiSuijakuScreen.js';
 
 const MainAppContent: React.FC = () => {
   const [singlePlayerGame, setSinglePlayerGame] = React.useState<string | null>(null);
@@ -34,6 +35,10 @@ const MainAppContent: React.FC = () => {
 
   if (singlePlayerGame === 'klondike') {
     return <KlondikeScreen onBackToLobby={() => setSinglePlayerGame(null)} />;
+  }
+
+  if (singlePlayerGame === 'shinkei-suijaku') {
+    return <ShinkeiSuijakuScreen onBackToLobby={() => setSinglePlayerGame(null)} />;
   }
 
   if (!state) {

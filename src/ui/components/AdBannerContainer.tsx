@@ -1,9 +1,11 @@
 import React from 'react';
+import { ADS_CONFIG } from '../../config/ads.js';
 
 export interface AdBannerContainerProps {
   slotId?: string;
   className?: string;
   testId?: string;
+  enabled?: boolean;
 }
 
 /**
@@ -12,12 +14,18 @@ export interface AdBannerContainerProps {
  * 1. Fixed container height (CLS prevention: 50px on mobile, 90px on desktop)
  * 2. Visual isolation from clickable game buttons (safe margins & distinct border)
  * 3. Clear labeling ("広告 / ADVERTISEMENT")
+ * 4. Toggable via props or ADS_CONFIG (default: disabled)
  */
 export const AdBannerContainer: React.FC<AdBannerContainerProps> = ({
   slotId = 'table-top-banner',
   className = '',
   testId = 'ad-banner-container',
+  enabled = ADS_CONFIG.enabled,
 }) => {
+  if (!enabled) {
+    return null;
+  }
+
   return (
     <div
       data-testid={testId}
