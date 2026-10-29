@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import type { Language, TranslationDictionary } from './types.js';
 import { ja } from './ja.js';
 import { en } from './en.js';
+import { I18N_CONFIG } from '../config/i18n.js';
 
 interface I18nContextValue {
   language: Language;
@@ -19,7 +20,7 @@ export const I18nProvider: React.FC<{
 }> = ({ children, initialLanguage }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     if (initialLanguage) return initialLanguage;
-    if (typeof window !== 'undefined') {
+    if (I18N_CONFIG.multilingualEnabled && typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const urlLang = urlParams.get('lang') as Language | null;
       if (urlLang === 'ja' || urlLang === 'en') return urlLang;

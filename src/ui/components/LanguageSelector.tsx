@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../../i18n/context.js';
 import type { Language } from '../../i18n/types.js';
+import { I18N_CONFIG } from '../../config/i18n.js';
 
 interface LanguageOption {
   code: Language;
@@ -12,8 +13,16 @@ const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { code: 'en', label: 'English' },
 ];
 
-export const LanguageSelector: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const LanguageSelector: React.FC<{ className?: string; forceShow?: boolean }> = ({
+  className = '',
+  forceShow = false,
+}) => {
   const { language, setLanguage } = useTranslation();
+
+  // Return null if multilingual feature is disabled and not forced
+  if (!I18N_CONFIG.multilingualEnabled && !forceShow) {
+    return null;
+  }
 
   return (
     <div

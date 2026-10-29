@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../../i18n/context.js';
 import { LanguageSelector } from './LanguageSelector.js';
+import { I18N_CONFIG } from '../../config/i18n.js';
 
 import type { DaifugoConfig } from '../../core/rules/daifugo/config.js';
 import { encodeConfigToUrlParam } from '../../core/rules/daifugo/url.js';
@@ -94,14 +95,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
 
-          {/* Language Selector */}
-          <div className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-900/60 border border-emerald-800">
-            <span className="font-bold flex items-center space-x-1.5">
-              <span>🌐</span>
-              <span>{t.settings.language}</span>
-            </span>
-            <LanguageSelector />
-          </div>
+          {/* Language Selector (hidden if multilingual is disabled) */}
+          {I18N_CONFIG.multilingualEnabled && (
+            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-900/60 border border-emerald-800">
+              <span className="font-bold flex items-center space-x-1.5">
+                <span>🌐</span>
+                <span>{t.settings.language}</span>
+              </span>
+              <LanguageSelector forceShow />
+            </div>
+          )}
 
           {/* Rules button */}
           <button

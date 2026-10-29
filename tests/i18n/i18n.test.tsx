@@ -16,7 +16,7 @@ const TestConsumer: React.FC = () => {
 };
 
 describe('I18n Localization', () => {
-  it('デフォルトで日本語がロードされ、タイトルやラベルが日本語で表示されること', () => {
+  it('デフォルトで日本語がロードされ、言語セレクターは非表示（日本語固定）であること', () => {
     render(
       <I18nProvider>
         <TestConsumer />
@@ -26,13 +26,14 @@ describe('I18n Localization', () => {
 
     expect(screen.getByTestId('current-lang')).toHaveTextContent('ja');
     expect(screen.getByTestId('play-text')).toHaveTextContent('出す');
+    expect(screen.queryByTestId('language-selector')).not.toBeInTheDocument();
   });
 
-  it('言語セレクターでEnglishを選択すると英語に切り替わること', () => {
+  it('言語セレクター有効時（forceShow）にEnglishを選択すると英語に切り替わること', () => {
     render(
       <I18nProvider>
         <TestConsumer />
-        <LanguageSelector />
+        <LanguageSelector forceShow />
       </I18nProvider>
     );
 
