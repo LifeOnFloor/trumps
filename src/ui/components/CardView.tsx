@@ -6,6 +6,8 @@ export interface CardViewProps {
   isSelected?: boolean;
   onClick?: () => void;
   disabled?: boolean;
+  isFaceDown?: boolean;
+  className?: string;
 }
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
@@ -35,7 +37,22 @@ export const CardView: React.FC<CardViewProps> = ({
   isSelected = false,
   onClick,
   disabled = false,
+  isFaceDown = false,
+  className = '',
 }) => {
+  if (isFaceDown) {
+    return (
+      <div
+        data-testid={`card-back-${card.id}`}
+        className={`relative w-14 h-20 sm:w-16 sm:h-24 rounded-lg bg-indigo-900 border-2 border-indigo-300/80 shadow-md flex items-center justify-center p-1 select-none overflow-hidden ${className}`}
+      >
+        <div className="w-full h-full rounded border border-indigo-400/40 bg-gradient-to-br from-indigo-800 to-blue-950 flex items-center justify-center text-indigo-300/40 text-lg">
+          ❖
+        </div>
+      </div>
+    );
+  }
+
   const isJoker = card.isJoker;
 
   return (
@@ -44,9 +61,9 @@ export const CardView: React.FC<CardViewProps> = ({
       data-testid={`card-${card.id}`}
       disabled={disabled}
       onClick={onClick}
-      className={`relative w-14 h-20 sm:w-16 sm:h-24 rounded-lg bg-white shadow-md border flex flex-col justify-between p-1.5 cursor-pointer transition-all duration-200 select-none ${
+      className={`relative w-14 h-20 sm:w-16 sm:h-24 rounded-lg bg-white shadow-md border flex flex-col justify-between p-1.5 cursor-pointer transition-all duration-200 select-none ${className} ${
         isSelected
-          ? '-translate-y-4 shadow-xl ring-2 ring-yellow-400 border-yellow-400 selected'
+          ? '-translate-y-4 shadow-xl ring-2 ring-yellow-400 border-yellow-400 selected z-20'
           : 'hover:-translate-y-1'
       } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     >

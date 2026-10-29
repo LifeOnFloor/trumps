@@ -334,6 +334,39 @@ describe('DaifugoPlugin', () => {
       expect(typeof p3Sanitized.handCount).toBe('number');
       expect(p3Sanitized.handCount).toBeGreaterThan(0);
     });
+
+    it('階級カード交換の記録 (exchanges) は当事者以外にはカード詳細が不可視化（隠蔽）されること', () => {
+      const plugin = new DaifugoPlugin();
+      const { context, ruleState } = plugin.init(
+        [
+          { id: 'p1', name: 'Alice' },
+          { id: 'p2', name: 'Bob' },
+          { id: 'p3', name: 'Charlie' },
+        ],
+        { cardExchange: true },
+        { previousRankings: ['p1', 'p2', 'p3'] }
+      );
+
+      expect(ruleState.exchanges).toBeDefined();
+      expect(ruleState.exchanges!.length).toBeGreaterThan(0);
+
+      // p2 (Heimin) is not involved in exchange between p1 and p3
+      const sanitizedForP2 = plugin.sanitizeForPlayer(context, ruleState, 'p2');
+      expect(sanitizedForP2.ruleState.exchanges).toBeDefined();
+      for (const ex of sanitizedForP2.ruleState.exchanges!) {
+        for (const card of ex.cards) {
+          expect(card.id).toBe('HIDDEN');
+        }
+      }
+
+      // p1 (Daifugo) is involved
+      const sanitizedForP1 = plugin.sanitizeForPlayer(context, ruleState, 'p1');
+      const p1InvolvedEx = sanitizedForP1.ruleState.exchanges?.find(
+        (ex) => ex.fromPlayerId === 'p1' || ex.toPlayerId === 'p1'
+      );
+      expect(p1InvolvedEx).toBeDefined();
+      expect(p1InvolvedEx!.cards.every((c) => c.id !== 'HIDDEN')).toBe(true);
+    });
   });
 
   describe('7. チップ対戦モード（chipsMode）', () => {

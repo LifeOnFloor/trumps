@@ -264,7 +264,7 @@ export const GAME_CATALOG: readonly GameMetadata[] = [
     category: 'solitaire',
     players: { min: 1, max: 1 },
     hasChips: false,
-    isPlayable: false,
+    isPlayable: true,
     tags: ['ソリティア', 'クロンダイク', '1人用', 'klondike', 'solitaire'],
     description: {
       ja: 'Windowsでお馴染みの最も有名な一人用トランプパズルゲーム。',

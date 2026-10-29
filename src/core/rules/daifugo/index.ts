@@ -711,9 +711,33 @@ export class DaifugoPlugin
       winnerPlayerIds: context.winnerPlayerIds,
     };
 
+    let sanitizedRuleState = ruleState;
+    if (ruleState.exchanges && ruleState.exchanges.length > 0) {
+      const maskedExchanges = ruleState.exchanges.map((ex) => {
+        const isParty = ex.fromPlayerId === viewerPlayerId || ex.toPlayerId === viewerPlayerId;
+        if (isParty) return ex;
+        return {
+          fromPlayerId: ex.fromPlayerId,
+          toPlayerId: ex.toPlayerId,
+          cards: ex.cards.map(
+            () =>
+              ({
+                id: 'HIDDEN',
+                suit: 'spade',
+                rank: 1,
+              } as Card)
+          ),
+        };
+      });
+      sanitizedRuleState = {
+        ...ruleState,
+        exchanges: maskedExchanges,
+      };
+    }
+
     return {
       context: sanitizedContext,
-      ruleState,
+      ruleState: sanitizedRuleState,
     };
   }
 

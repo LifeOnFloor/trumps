@@ -8,6 +8,7 @@ import { LanguageSelector } from '../components/LanguageSelector.js';
 import { GameSelector } from '../components/GameSelector.js';
 import { RulePresets } from '../components/RulePresets.js';
 import { RulesModal } from '../components/RulesModal.js';
+import { AdBannerContainer } from '../components/AdBannerContainer.js';
 import { isAudioMuted, setAudioMuted } from '../utils/sound.js';
 
 export interface LobbyScreenProps {
@@ -22,6 +23,7 @@ export interface LobbyScreenProps {
   onUpdateConfig?: (config: DaifugoConfig) => void;
   onStartGame: (config?: DaifugoConfig) => void;
   onLeaveRoom?: () => void;
+  onStartSinglePlayerGame?: (gameId: string) => void;
 }
 
 export const LobbyScreen: React.FC<LobbyScreenProps> = ({
@@ -36,6 +38,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onUpdateConfig,
   onStartGame,
   onLeaveRoom,
+  onStartSinglePlayerGame,
 }) => {
   const { t, language } = useTranslation();
   const [mode, setMode] = useState<'select' | 'host' | 'client'>('select');
@@ -273,34 +276,60 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             />
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                disabled={isConnecting}
-                onClick={() => {
-                  setMode('host');
-                  onStartHost(playerName, config);
-                }}
-                className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 flex items-center justify-center space-x-1.5 disabled:opacity-50"
-              >
-                <span>👑</span>
-                <span>{t.lobby.createRoom}</span>
-              </button>
+            {selectedGameId === 'klondike' ? (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  data-testid="play-solitaire-button"
+                  onClick={() => onStartSinglePlayerGame?.('klondike')}
+                  className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 hover:from-yellow-300 hover:to-amber-300 text-gray-950 font-black text-base shadow-xl shadow-yellow-500/30 transition active:scale-95 flex items-center justify-center space-x-2"
+                >
+                  <span className="text-xl">🎴</span>
+                  <span>ソリティアを1人でプレイする</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2.5 pt-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    disabled={isConnecting}
+                    onClick={() => {
+                      setMode('host');
+                      onStartHost(playerName, config);
+                    }}
+                    className="py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black text-sm shadow-lg shadow-yellow-500/25 transition active:scale-95 flex items-center justify-center space-x-1.5 disabled:opacity-50"
+                  >
+                    <span>👑</span>
+                    <span>{t.lobby.createRoom}</span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('client');
-                  if (playerName === '#1') {
-                    setPlayerName('#2');
-                  }
-                }}
-                className="py-3.5 px-4 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-black text-sm shadow-md border border-emerald-600/60 transition active:scale-95 flex items-center justify-center space-x-1.5"
-              >
-                <span>🚪</span>
-                <span>{t.lobby.joinRoom}</span>
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('client');
+                      if (playerName === '#1') {
+                        setPlayerName('#2');
+                      }
+                    }}
+                    className="py-3.5 px-4 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-black text-sm shadow-md border border-emerald-600/60 transition active:scale-95 flex items-center justify-center space-x-1.5"
+                  >
+                    <span>🚪</span>
+                    <span>{t.lobby.joinRoom}</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  data-testid="quick-solitaire-button"
+                  onClick={() => onStartSinglePlayerGame?.('klondike')}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 border border-yellow-500/40 text-yellow-300 font-bold text-xs shadow transition active:scale-95 flex items-center justify-center space-x-1.5"
+                >
+                  <span>🎴</span>
+                  <span>1人用ゲーム（ソリティア）を遊ぶ</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -909,6 +938,9 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
           </div>
         )}
       </div>
+
+      {/* Policy-compliant Ad container with CLS prevention */}
+      <AdBannerContainer slotId="lobby-screen-bottom" className="mt-4" />
     </div>
   );
 };

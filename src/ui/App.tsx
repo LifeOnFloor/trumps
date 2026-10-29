@@ -3,8 +3,11 @@ import { I18nProvider } from '../i18n/context.js';
 import { useGameSession } from './hooks/use-game-session.js';
 import { LobbyScreen } from './screens/LobbyScreen.js';
 import { TableScreen } from './screens/TableScreen.js';
+import { KlondikeScreen } from './screens/KlondikeScreen.js';
 
 const MainAppContent: React.FC = () => {
+  const [singlePlayerGame, setSinglePlayerGame] = React.useState<string | null>(null);
+
   const {
     isHost,
     isConnecting,
@@ -29,6 +32,10 @@ const MainAppContent: React.FC = () => {
     dispatchDiscardCards,
   } = useGameSession();
 
+  if (singlePlayerGame === 'klondike') {
+    return <KlondikeScreen onBackToLobby={() => setSinglePlayerGame(null)} />;
+  }
+
   if (!state) {
     return (
       <LobbyScreen
@@ -43,6 +50,7 @@ const MainAppContent: React.FC = () => {
         onUpdateConfig={updateConfig}
         onStartGame={startGame}
         onLeaveRoom={leaveRoom}
+        onStartSinglePlayerGame={(gameId) => setSinglePlayerGame(gameId)}
       />
     );
   }

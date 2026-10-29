@@ -3,14 +3,27 @@
 
 let audioContext: AudioContext | null = null;
 let isSoundMuted = false;
+let isHapticsMuted = false;
 
 // Initialize mute state from localStorage if available
 try {
   if (typeof window !== 'undefined' && window.localStorage) {
     isSoundMuted = window.localStorage.getItem('trumps_sound_muted') === 'true';
+    isHapticsMuted = window.localStorage.getItem('trumps_haptic_muted') === 'true';
   }
 } catch {
   // Ignore storage access errors
+}
+
+// User-gesture unlock for Web Audio API Autoplay Policy
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume().catch(() => {});
+    }
+  };
+  window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('touchstart', unlockAudio, { passive: true });
 }
 
 function getAudioContext(): AudioContext | null {
@@ -42,7 +55,23 @@ export function setAudioMuted(muted: boolean): void {
   }
 }
 
+export function isHapticMuted(): boolean {
+  return isHapticsMuted;
+}
+
+export function setHapticMuted(muted: boolean): void {
+  isHapticsMuted = muted;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('trumps_haptic_muted', String(muted));
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 export function triggerHaptic(durationOrPattern: number | number[] = 10): void {
+  if (isHapticsMuted) return;
   try {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       navigator.vibrate(durationOrPattern);
@@ -53,8 +82,8 @@ export function triggerHaptic(durationOrPattern: number | number[] = 10): void {
 }
 
 export function playTapSound(): void {
-  if (isSoundMuted) return;
   triggerHaptic(8);
+  if (isSoundMuted) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -81,8 +110,8 @@ export function playTapSound(): void {
 }
 
 export function playCardPlaySound(): void {
-  if (isSoundMuted) return;
   triggerHaptic(15);
+  if (isSoundMuted) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -109,8 +138,8 @@ export function playCardPlaySound(): void {
 }
 
 export function playPassSound(): void {
-  if (isSoundMuted) return;
   triggerHaptic(10);
+  if (isSoundMuted) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -137,8 +166,8 @@ export function playPassSound(): void {
 }
 
 export function playEightCutSound(): void {
-  if (isSoundMuted) return;
   triggerHaptic([20, 40, 20]);
+  if (isSoundMuted) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -165,8 +194,8 @@ export function playEightCutSound(): void {
 }
 
 export function playRevolutionSound(): void {
-  if (isSoundMuted) return;
   triggerHaptic([30, 50, 40, 50, 60]);
+  if (isSoundMuted) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 

@@ -69,22 +69,27 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
 
       <div
         data-testid="player-hand"
-        className="w-full overflow-x-auto py-2 px-4 sm:px-6 select-none scrollbar-thin touch-pan-x flex items-end"
+        className="w-full overflow-x-auto py-2 px-3 sm:px-6 select-none scrollbar-thin touch-pan-x flex items-end justify-start sm:justify-center"
       >
         <div
           className={`flex items-end m-auto transition-all ${
-            sortedCards.length > 12
-              ? '-space-x-5 sm:-space-x-5'
+            sortedCards.length > 15
+              ? '-space-x-7 sm:-space-x-8'
+              : sortedCards.length > 12
+              ? '-space-x-6 sm:-space-x-7'
               : sortedCards.length > 8
-              ? '-space-x-4 sm:-space-x-4'
-              : '-space-x-3 sm:-space-x-4'
+              ? '-space-x-4 sm:-space-x-5'
+              : sortedCards.length > 5
+              ? '-space-x-3 sm:-space-x-4'
+              : '-space-x-2 sm:-space-x-3'
           }`}
         >
-          {sortedCards.map((card) => (
+          {sortedCards.map((card, idx) => (
             <div
               key={card.id}
               data-card-id={card.id}
-              className="flex-shrink-0 transition-transform duration-150"
+              style={{ zIndex: selectedSet.has(card.id) ? 25 : idx + 1 }}
+              className="flex-shrink-0 transition-all duration-150 hover:!z-30 focus-within:!z-30"
             >
               <CardView
                 card={card}

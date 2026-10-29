@@ -1,4 +1,4 @@
-import { Peer, type DataConnection } from 'peerjs';
+import { Peer, type DataConnection, type PeerOptions } from 'peerjs';
 import type { ITransport } from './transport.js';
 
 export class PeerJsTransport implements ITransport {
@@ -18,9 +18,11 @@ export class PeerJsTransport implements ITransport {
     this.startHeartbeat();
   }
 
-  static async create(peerId?: string): Promise<PeerJsTransport> {
+  static async create(peerId?: string, options?: PeerOptions): Promise<PeerJsTransport> {
     return new Promise((resolve, reject) => {
-      const peer = peerId ? new Peer(peerId) : new Peer();
+      const peer = peerId
+        ? (options ? new Peer(peerId, options) : new Peer(peerId))
+        : (options ? new Peer(options) : new Peer());
       peer.on('open', () => {
         resolve(new PeerJsTransport(peer));
       });

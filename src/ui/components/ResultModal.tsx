@@ -8,6 +8,7 @@ export interface ResultModalProps {
   isHost?: boolean;
   onNextRound?: () => void;
   onRestart?: () => void;
+  onRewardAdWatched?: () => void;
 }
 
 export const ResultModal: React.FC<ResultModalProps> = ({
@@ -16,8 +17,10 @@ export const ResultModal: React.FC<ResultModalProps> = ({
   isHost = false,
   onNextRound,
   onRestart,
+  onRewardAdWatched,
 }) => {
   const { t, language } = useTranslation();
+  const [hasWatchedReward, setHasWatchedReward] = React.useState(false);
   const playerMap = new Map(players.map((p) => [p.id, p]));
 
   const rankTitles = [
@@ -28,6 +31,15 @@ export const ResultModal: React.FC<ResultModalProps> = ({
     t.results.ranks.daihinmin,
   ];
 
+  const handleWatchRewardAd = () => {
+    setHasWatchedReward(true);
+    if (onRewardAdWatched) {
+      onRewardAdWatched();
+    }
+  };
+
+  const hasChipsSystem = players.some((p) => p.chips !== undefined);
+
   return (
     <div
       data-testid="result-modal"
@@ -35,18 +47,18 @@ export const ResultModal: React.FC<ResultModalProps> = ({
     >
       <div className="bg-emerald-950/95 border border-yellow-500/50 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
         <div className="text-3xl mb-1">🏆</div>
-        <h2 className="text-2xl font-black text-yellow-400 mb-4 tracking-wider">
+        <h2 className="text-2xl font-black text-yellow-400 mb-3 tracking-wider">
           {t.results.gameOver}
         </h2>
 
-        <div className="space-y-2 mb-6">
+        <div className="space-y-1.5 mb-4">
           {rankings.map((playerId, idx) => {
             const player = playerMap.get(playerId);
             const title = rankTitles[idx] ?? (language === 'en' ? `#${idx + 1}` : `${idx + 1}位`);
             return (
               <div
                 key={playerId}
-                className="flex items-center justify-between p-3 rounded-2xl bg-emerald-900/80 border border-emerald-700/80 text-sm shadow-sm"
+                className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-900/80 border border-emerald-700/80 text-sm shadow-sm"
               >
                 <div className="flex items-center space-x-2">
                   <span className="font-black text-yellow-400 bg-emerald-950 px-2 py-0.5 rounded-lg border border-yellow-500/30 text-xs">
@@ -68,6 +80,32 @@ export const ResultModal: React.FC<ResultModalProps> = ({
           })}
         </div>
 
+        {/* Rewarded Ad Recovery Section */}
+        {hasChipsSystem && (
+          <div className="mb-4 p-2.5 rounded-2xl bg-amber-950/70 border border-yellow-500/40 text-center">
+            {hasWatchedReward ? (
+              <div className="text-xs font-bold text-yellow-300 py-1 flex items-center justify-center space-x-1">
+                <span>✨</span>
+                <span>チップ回復ボーナスを獲得しました！</span>
+              </div>
+            ) : (
+              <div>
+                <p className="text-[11px] text-amber-200/90 mb-1.5">
+                  📺 動画広告を視聴して 500 チップ補給
+                </p>
+                <button
+                  type="button"
+                  data-testid="reward-ad-button"
+                  onClick={handleWatchRewardAd}
+                  className="w-full py-2 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-300 text-gray-950 font-black text-xs shadow transition active:scale-95"
+                >
+                  リワード広告を見てチップ回復
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-2.5">
           {onNextRound && (
             isHost ? (
@@ -75,7 +113,7 @@ export const ResultModal: React.FC<ResultModalProps> = ({
                 type="button"
                 data-testid="next-round-button"
                 onClick={onNextRound}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black shadow-lg shadow-yellow-500/30 transition active:scale-95 text-sm"
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-950 font-black shadow-lg shadow-yellow-500/30 transition active:scale-95 text-sm"
               >
                 👑 {t.results.startNextGame}
               </button>

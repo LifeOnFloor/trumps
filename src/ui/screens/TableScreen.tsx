@@ -13,6 +13,7 @@ import { EventBanner } from '../components/EventBanner.js';
 import { ResultModal } from '../components/ResultModal.js';
 import { RulesModal } from '../components/RulesModal.js';
 import { SettingsModal } from '../components/SettingsModal.js';
+import { AdBannerContainer } from '../components/AdBannerContainer.js';
 import {
   playCardPlaySound,
   playPassSound,
@@ -261,6 +262,9 @@ export const TableScreen: React.FC<TableScreenProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Policy-compliant Ad container with safe margins and CLS prevention */}
+      <AdBannerContainer slotId="table-screen-top" />
 
       {/* Opponents row */}
       <div className="w-full max-w-4xl flex items-center justify-center space-x-2 sm:space-x-4 px-2">
